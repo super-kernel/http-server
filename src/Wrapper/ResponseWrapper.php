@@ -21,71 +21,76 @@ final class ResponseWrapper implements ResponseInterface
 
 	public function getProtocolVersion(): string
 	{
-		return $this->response->getProtocolVersion();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withProtocolVersion(string $version): MessageInterface
 	{
-		return $this->response->withProtocolVersion($version);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getHeaders(): array
 	{
-		return $this->response->getHeaders();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function hasHeader(string $name): bool
 	{
-		return $this->response->hasHeader($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getHeader(string $name): array
 	{
-		return $this->response->getHeader($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getHeaderLine(string $name): string
 	{
-		return $this->response->getHeaderLine($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withHeader(string $name, $value): MessageInterface
 	{
-		return $this->response->withHeader($name, $value);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withAddedHeader(string $name, $value): MessageInterface
 	{
-		return $this->response->withAddedHeader($name, $value);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withoutHeader(string $name): MessageInterface
 	{
-		return $this->response->withoutHeader($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getBody(): StreamInterface
 	{
-		return $this->response->getBody();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withBody(StreamInterface $body): MessageInterface
 	{
-		return $this->response->withBody($body);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getStatusCode(): int
 	{
-		return $this->response->getStatusCode();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
 	{
-		return $this->response->withStatus($code, $reasonPhrase);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getReasonPhrase(): string
 	{
-		return $this->response->getReasonPhrase();
+		return $this->__call(__FUNCTION__, ...func_get_args());
+	}
+
+	public function __call(string $name, array $arguments): mixed
+	{
+		return call_user_func([$this->response, $name], ...func_get_args());
 	}
 }

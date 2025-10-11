@@ -34,87 +34,87 @@ final class RequestWrapper implements RequestInterface
 
 	public function getProtocolVersion(): string
 	{
-		return $this->serverRequest->getProtocolVersion();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withProtocolVersion(string $version): MessageInterface
 	{
-		return $this->serverRequest->withProtocolVersion($version);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getHeaders(): array
 	{
-		return $this->serverRequest->getHeaders();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function hasHeader(string $name): bool
 	{
-		return $this->serverRequest->hasHeader($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getHeader(string $name): array
 	{
-		return $this->serverRequest->getHeader($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getHeaderLine(string $name): string
 	{
-		return $this->serverRequest->getHeaderLine($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withHeader(string $name, $value): MessageInterface
 	{
-		return $this->serverRequest->withHeader($name, $value);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withAddedHeader(string $name, $value): MessageInterface
 	{
-		return $this->serverRequest->withAddedHeader($name, $value);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withoutHeader(string $name): MessageInterface
 	{
-		return $this->serverRequest->withoutHeader($name);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getBody(): StreamInterface
 	{
-		return $this->serverRequest->getBody();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withBody(StreamInterface $body): MessageInterface
 	{
-		return $this->serverRequest->withBody($body);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getRequestTarget(): string
 	{
-		return $this->serverRequest->getRequestTarget();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withRequestTarget(string $requestTarget): RequestInterface
 	{
-		return $this->serverRequest->withRequestTarget($requestTarget);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getMethod(): string
 	{
-		return $this->serverRequest->getMethod();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withMethod(string $method): RequestInterface
 	{
-		return $this->serverRequest->withMethod($method);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function getUri(): UriInterface
 	{
-		return $this->serverRequest->getUri();
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
 	{
-		return $this->serverRequest->withUri($uri, $preserveHost);
+		return $this->__call(__FUNCTION__, ...func_get_args());
 	}
 
 	public function __call(string $name, array $arguments): mixed
