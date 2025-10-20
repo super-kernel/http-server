@@ -1,6 +1,6 @@
 .idea/
 .git/
-runtime/
+target/
 vendor/
 .vscode/
 *.phar
