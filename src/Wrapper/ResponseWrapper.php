@@ -7,9 +7,7 @@ use Laminas\Diactoros\Response;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
-use SuperKernel\Attribute\Contract;
 
-#[Contract(ResponseInterface::class)]
 final class ResponseWrapper implements ResponseInterface
 {
 	private ResponseInterface $response;
@@ -91,6 +89,9 @@ final class ResponseWrapper implements ResponseInterface
 
 	public function __call(string $name, array $arguments): mixed
 	{
-		return call_user_func([$this->response, $name], ...$arguments);
+		return call_user_func([
+			                      $this->response,
+			                      $name,
+		                      ], ...$arguments);
 	}
 }

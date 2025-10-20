@@ -6,14 +6,21 @@ namespace SuperKernel\HttpServer\Dispatcher;
 use FastRoute\Dispatcher;
 use FastRoute\Dispatcher\GroupCountBased;
 use Psr\Http\Message\ResponseInterface;
+<<<<<<< HEAD
 use SuperKernel\Attribute\Contract;
+=======
+>>>>>>> main
 use SuperKernel\Attribute\Provider;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 
 #[
 	Provider(Dispatcher::class),
+<<<<<<< HEAD
 	Contract(Dispatcher::class),
+=======
+	Provider(Dispatcher::class),
+>>>>>>> main
 ]
 final readonly class RouteDispatcher
 {

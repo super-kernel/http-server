@@ -3,13 +3,19 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Provider;
 
+<<<<<<< HEAD
 use SuperKernel\Attribute\Contract;
+=======
+>>>>>>> main
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpServer\Context\MiddlewareContext;
 use SuperKernel\HttpServer\Contract\MiddlewareInterface;
 
 #[
+<<<<<<< HEAD
 	Contract(MiddlewareInterface::class),
+=======
+>>>>>>> main
 	Provider(MiddlewareInterface::class),
 ]
 final class MiddlewareProvider implements MiddlewareInterface

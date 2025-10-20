@@ -8,13 +8,19 @@ use Psr\Http\Message\RequestInterface as PsrRequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+<<<<<<< HEAD
 use SuperKernel\Attribute\Contract;
+=======
+>>>>>>> main
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpServer\Context\RequestContext;
 use SuperKernel\HttpServer\Contract\RequestInterface;
 
 #[
+<<<<<<< HEAD
 	Contract(ServerRequestInterface::class),
+=======
+>>>>>>> main
 	Provider(ServerRequestInterface::class),
 ]
 final class RequestProvider implements RequestInterface

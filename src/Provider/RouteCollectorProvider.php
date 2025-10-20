@@ -9,6 +9,7 @@ use FastRoute\RouteParser\Std;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+<<<<<<< HEAD
 use ReflectionMethod;
 use SuperKernel\Attribute\Contract;
 use SuperKernel\Attribute\Factory;
@@ -20,6 +21,16 @@ use SuperKernel\HttpServer\Enumeration\Method;
 
 #[
 	Contract(RouteCollector::class),
+=======
+use SuperKernel\Attribute\Factory;
+use SuperKernel\Attribute\Provider;
+use SuperKernel\Contract\AttributeCollectorInterface;
+use SuperKernel\Contract\ReflectionCollectorInterface;
+use SuperKernel\HttpServer\Attribute\HttpController;
+use SuperKernel\HttpServer\Attribute\RequestMapping;
+
+#[
+>>>>>>> main
 	Provider(RouteCollector::class),
 	Factory,
 ]
@@ -30,12 +41,18 @@ final readonly class RouteCollectorProvider
 	}
 
 	/**
+<<<<<<< HEAD
 	 * @param ReflectionManagerInterface $reflectionManager
+=======
+	 * @param ReflectionCollectorInterface $reflectionCollector
+	 * @param AttributeCollectorInterface  $attributeCollector
+>>>>>>> main
 	 *
 	 * @return RouteCollector
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 */
+<<<<<<< HEAD
 	public function __invoke(ReflectionManagerInterface $reflectionManager): RouteCollector
 	{
 		$classes        = $reflectionManager->getAttributes(HttpController::class);
@@ -75,6 +92,39 @@ final readonly class RouteCollectorProvider
 								$reflectionClassMethod->getName(),
 							]);
 						}
+=======
+	public function __invoke(
+		ReflectionCollectorInterface $reflectionCollector,
+		AttributeCollectorInterface  $attributeCollector,
+	): RouteCollector
+	{
+		$routeCollector = new RouteCollector(new Std, new GroupCountBased);
+
+		foreach ($attributeCollector->getAttributes(HttpController::class) as $class => $attributes) {
+			/* @var HttpController $attribute */
+			foreach ($attributes as $attribute) {
+				$prefix         = $attribute->prefix;
+				$reflectMethods = $reflectionCollector->reflectClass($class)->getMethods();
+
+				foreach ($reflectMethods as $reflectMethod) {
+					foreach ($reflectMethod->getAttributes(RequestMapping::class) as $methodAttribute) {
+						/* @var RequestMapping $methodAttributeInstance */
+						$methodAttributeInstance = $methodAttribute->newInstance();
+
+						$path        = $methodAttributeInstance->path;
+						$httpMethods = str_contains($methodAttributeInstance->methods, ',')
+							? explode(',', $methodAttributeInstance->methods)
+							: $methodAttributeInstance->methods;
+
+						$handler = [
+							$this->container->get($class),
+							$reflectMethod->getName(),
+						];
+
+						$route = str_starts_with($path, '/') ? $path : $prefix . '/' . $path;
+
+						$routeCollector->addRoute($httpMethods, $route, $handler);
+>>>>>>> main
 					}
 				}
 			}

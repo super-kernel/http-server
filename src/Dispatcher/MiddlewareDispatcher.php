@@ -2,16 +2,30 @@
 declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Dispatcher;
+<<<<<<< HEAD
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
+=======
+>>>>>>> main
 
-final class MiddlewareDispatcher
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use RuntimeException;
+use SplPriorityQueue;
+
+final readonly class MiddlewareDispatcher
 {
+<<<<<<< HEAD
 	public function __construct(private \SplPriorityQueue $middlewares)
+=======
+	public function __construct(private SplPriorityQueue $middlewares)
+>>>>>>> main
 	{
 	}
 

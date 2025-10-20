@@ -8,14 +8,20 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface as PsrMiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+<<<<<<< HEAD
 use SuperKernel\Attribute\Contract;
+=======
+>>>>>>> main
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpServer\Contract\MiddlewareInterface;
 use SuperKernel\HttpServer\Message\SwooleStream;
 use function json_encode;
 
 #[
+<<<<<<< HEAD
 	Contract(RequestHandlerInterface::class),
+=======
+>>>>>>> main
 	Provider(RequestHandlerInterface::class),
 ]
 final readonly class RequestHandler implements RequestHandlerInterface
