@@ -1,36 +1,33 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernelTest\Config;
+namespace SuperKernelTest\HttpServer\Config;
 
-use SuperKernel\Attribute\Contract;
-use SuperKernel\Server\Config;
-use SuperKernel\Server\ConfigInterface;
+use SuperKernel\Config\Attribute\Configuration;
 use SuperKernel\Server\Mode;
 use SuperKernel\Server\ServerConfig;
+use SuperKernel\Server\ServerConfigInterface;
 use SuperKernel\Server\ServerType;
 
 
-#[
-	Contract(ConfigInterface::class),
-]
-final class Server implements ConfigInterface
+#[Configuration]
+final class Server implements ServerConfigInterface
 {
 	public function getMode(): Mode
 	{
 		return Mode::SWOOLE_PROCESS;
 	}
 
-	public function getServerConfigs(): ServerConfig
+	public function getServerConfigs(): array
 	{
-		return new ServerConfig(
-			new Config(
+		return [
+			new ServerConfig(
 				name     : 'http',
 				type     : ServerType::SERVER_HTTP,
 				host     : '0.0.0.0',
 				port     : 9501,
 				sock_type: SWOOLE_SOCK_TCP,
 			),
-		);
+		];
 	}
 }

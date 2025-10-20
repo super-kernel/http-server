@@ -1,10 +1,8 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernelTest\HttpServer;
+namespace SuperKernelTest\HttpServer\Controller;
 
-use Laminas\Diactoros\Response;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use SuperKernel\HttpServer\Attribute\HttpController;
@@ -14,24 +12,24 @@ use SuperKernel\HttpServer\Enumeration\Method;
 #[HttpController(prefix: '/index', server: 'http')]
 final readonly class IndexController
 {
-	/**
-	 * @param ServerRequestInterface $request
-	 * @param Response               $response
-	 */
-	public function __construct(private RequestInterface $request, private ResponseInterface $response)
+	public function __construct(private ServerRequestInterface $serverRequest, private ResponseInterface $response)
 	{
 	}
 
 	#[RequestMapping('index', Method::GET)]
-	public function index(): ResponseInterface
+	public function index(): array
 	{
-		var_dump('Handle for ' . __CLASS__ . '::' . __FUNCTION__);
-
-		var_dump($this->request->getQueryParams());
-
-		return $this->response->withBody(
-			new Response\JsonResponse($this->request->getQueryParams())->getBody(),
+		var_dump(
+			$this->serverRequest,
+			$this->response,
 		);
 
+		return [
+			'code'    => 200,
+			'message' => 'OK',
+			'data'    => [
+				'Hello' => 'World',
+			],
+		];
 	}
 }

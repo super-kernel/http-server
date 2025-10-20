@@ -1,14 +1,20 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernel\HttpServer;
+namespace SuperKernel\HttpServer\Provider;
 
 use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use Psr\Http\Message\StreamInterface;
-use SuperKernel\HttpServer\Context\RequestContext\ResponseContext;
+use SuperKernel\Attribute\Provider;
+use SuperKernel\HttpServer\Context\ResponseContext;
+use SuperKernel\HttpServer\Contract\ResponseInterface;
 
-final class Response implements ResponseInterface
+#[
+	Provider(ResponseInterface::class),
+	Provider(PsrResponseInterface::class),
+]
+final class ResponseProvider implements ResponseInterface
 {
 	public function getProtocolVersion(): string
 	{
@@ -70,7 +76,7 @@ final class Response implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
+	public function withStatus(int $code, string $reasonPhrase = ''): PsrResponseInterface
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
@@ -82,6 +88,9 @@ final class Response implements ResponseInterface
 
 	public function __call(string $name, array $arguments): mixed
 	{
-		return call_user_func([ResponseContext::get(), $name], ...$arguments);
+		return call_user_func([
+			                      ResponseContext::get(),
+			                      $name,
+		                      ], ...$arguments);
 	}
 }

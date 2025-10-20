@@ -1,39 +1,39 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernel\HttpServer\Context\RequestContext;
+namespace SuperKernel\HttpServer\Context;
 
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use SuperKernel\Context\Context;
 
 final class RequestContext
 {
-	public static function get(): RequestInterface
+	public static function get(): ServerRequestInterface
 	{
-		$request = Context::get(RequestInterface::class);
+		$request = Context::get(ServerRequestInterface::class);
 
-		if ($request instanceof RequestInterface) {
+		if ($request instanceof ServerRequestInterface) {
 			return $request;
 		}
 
 		throw new RuntimeException(
 			sprintf(
 				'Expected instance of %s in Context, but none found.',
-				RequestInterface::class,
+				ServerRequestInterface::class,
 			),
 		);
 	}
 
-	public static function set(RequestInterface $value): RequestInterface
+	public static function set(ServerRequestInterface $serverRequest): ServerRequestInterface
 	{
-		Context::set(RequestInterface::class, $value);
+		Context::set(ServerRequestInterface::class, $serverRequest);
 
-		return $value;
+		return $serverRequest;
 	}
 
 	public static function delete(): void
 	{
-		Context::delete(RequestInterface::class);
+		Context::delete(ServerRequestInterface::class);
 	}
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace SuperKernel\HttpServer\Context\RequestContext;
+namespace SuperKernel\HttpServer\Context;
 
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
@@ -24,11 +24,11 @@ final class ResponseContext
 		);
 	}
 
-	public static function set(ResponseInterface $value): ResponseInterface
+	public static function set(ResponseInterface $response): ResponseInterface
 	{
-		Context::set(ResponseInterface::class, $value);
+		Context::set(ResponseInterface::class, $response);
 
-		return $value;
+		return $response;
 	}
 
 	public static function delete(): void

@@ -1,38 +1,24 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernel\HttpServer\Wrapper;
+namespace SuperKernel\HttpServer\Provider;
 
-use Laminas\Diactoros\ServerRequest;
-use Laminas\Diactoros\Uri;
 use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\RequestInterface as PsrRequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
-use SuperKernel\HttpServer\Message\SwooleStream;
-use Swoole\Http\Request;
+use SuperKernel\Attribute\Contract;
+use SuperKernel\Attribute\Provider;
+use SuperKernel\HttpServer\Context\RequestContext;
+use SuperKernel\HttpServer\Contract\RequestInterface;
 
-final class RequestWrapper implements ServerRequestInterface
+#[
+	Contract(ServerRequestInterface::class),
+	Provider(ServerRequestInterface::class),
+]
+final class RequestProvider implements RequestInterface
 {
-	private ServerRequestInterface $serverRequest;
-
-	public function __construct(Request $request)
-	{
-		$this->serverRequest = new ServerRequest(
-			serverParams : $request->server,
-			uploadedFiles: $request->files ?? [],
-			uri          : new Uri($request->server['request_uri']),
-			method       : $request->server['request_method'],
-			body         : new SwooleStream(''),
-			headers      : $request->header,
-			cookieParams : $request->cookie ?? [],
-			queryParams  : $request->get ?? [],
-			parsedBody   : $request->post,
-			protocol     : $request->server['server_protocol'],
-		);
-	}
-
 	public function getProtocolVersion(): string
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
@@ -93,7 +79,7 @@ final class RequestWrapper implements ServerRequestInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function withRequestTarget(string $requestTarget): RequestInterface
+	public function withRequestTarget(string $requestTarget): PsrRequestInterface
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
@@ -103,7 +89,7 @@ final class RequestWrapper implements ServerRequestInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function withMethod(string $method): RequestInterface
+	public function withMethod(string $method): PsrRequestInterface
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
@@ -113,7 +99,7 @@ final class RequestWrapper implements ServerRequestInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function withUri(UriInterface $uri, bool $preserveHost = false): RequestInterface
+	public function withUri(UriInterface $uri, bool $preserveHost = false): PsrRequestInterface
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
@@ -186,7 +172,7 @@ final class RequestWrapper implements ServerRequestInterface
 	public function __call(string $name, array $arguments): mixed
 	{
 		return call_user_func([
-			                      $this->serverRequest,
+			                      RequestContext::get(),
 			                      $name,
 		                      ], ...$arguments);
 	}
