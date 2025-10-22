@@ -6,13 +6,23 @@ namespace SuperKernelTest\HttpServer\Controller;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use SuperKernel\HttpServer\Attribute\HttpController;
+<<<<<<< Updated upstream
 use SuperKernel\HttpServer\Attribute\Middleware;
+=======
+use SuperKernel\HttpServer\Attribute\Middlewares;
+>>>>>>> Stashed changes
 use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernelTest\HttpServer\Middleware\BeforeMiddleware;
 
 #[
 	HttpController(prefix: '/index', server: 'http'),
+<<<<<<< Updated upstream
 	Middleware(middleware: BeforeMiddleware::class),
+=======
+	Middlewares([
+		BeforeMiddleware::class,
+	]),
+>>>>>>> Stashed changes
 ]
 final readonly class IndexController
 {
@@ -20,6 +30,7 @@ final readonly class IndexController
 	{
 	}
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 	#[RequestMapping('index', Method::GET)]
 =======
@@ -30,6 +41,14 @@ final readonly class IndexController
 		var_dump(
 			$this->serverRequest,
 			$this->response,
+=======
+	#[RequestMapping(path: 'index', methods: 'get')]
+	public function index(): array
+	{
+		var_dump(
+			$this->serverRequest->getServerParams(),
+			$this->response->getStatusCode(),
+>>>>>>> Stashed changes
 		);
 
 		return [

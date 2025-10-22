@@ -8,7 +8,7 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class HttpController
 {
-	public function __construct(public ?string $prefix = null, public string $server = 'http')
+	public function __construct(public string $prefix = '', public string $server = 'http')
 	{
 	}
 }

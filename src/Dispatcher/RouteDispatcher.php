@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Dispatcher;
 
+<<<<<<< Updated upstream
 use FastRoute\Dispatcher;
 use FastRoute\Dispatcher\GroupCountBased;
 use Psr\Http\Message\ResponseInterface;
@@ -34,11 +35,16 @@ final readonly class RouteDispatcher
 	}
 
 	public function dispatch(Request $request, Response $response): void
-	{
-		$httpMethod = $request->getMethod();
-		$uri        = $request->server['request_uri'];
-		$routeInfo  = $this->dispatcher->dispatch($httpMethod, $uri);
+=======
+use Psr\Http\Message\ServerRequestInterface;
 
+final class RouteDispatcher
+{
+	public function dispatch(string $serverName, ServerRequestInterface $request)
+>>>>>>> Stashed changes
+	{
+
+<<<<<<< Updated upstream
 		switch ($routeInfo[0]) {
 			case Dispatcher::NOT_FOUND:
 				$response->end('404 Not Found.');
@@ -51,5 +57,7 @@ final readonly class RouteDispatcher
 				$responseBody = call_user_func($routeInfo[1]);
 				$response->end($responseBody->getBody()->getContents());
 		}
+=======
+>>>>>>> Stashed changes
 	}
 }

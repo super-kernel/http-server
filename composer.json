@@ -15,12 +15,14 @@
     },
     "authors": [
         {
-            "name": "wheakerd"
+            "name": "wheakerd",
+            "email": "wheakerd@gmail.com"
         }
     ],
     "minimum-stability": "stable",
     "require": {
         "php": ">=8.4",
+<<<<<<< Updated upstream
         "laminas/laminas-diactoros": "^3.6",
         "nikic/fast-route": "^1.3",
         "psr/http-message": "^2.0",
@@ -39,5 +41,21 @@
     },
     "config": {
         "sort-packages": true
+=======
+        "ext-swoole": ">=6.0",
+        "super-kernel/server": "*",
+        "nikic/fast-route": "*",
+        "psr/http-message": "*",
+        "psr/http-server-middleware": "*",
+        "super-kernel/context": "*",
+        "laminas/laminas-diactoros": "*"
+    },
+    "require-dev": {
+        "swoole/ide-helper": "*",
+        "super-kernel/framework": "*",
+        "super-kernel/di": "*",
+        "super-kernel/event-dispatcher": "*",
+        "super-kernel/logger": "*"
+>>>>>>> Stashed changes
     }
 }

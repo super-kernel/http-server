@@ -30,10 +30,13 @@ final class RequestContext
 		Context::set(ServerRequestInterface::class, $serverRequest);
 
 		return $serverRequest;
+<<<<<<< Updated upstream
 	}
 
 	public static function delete(): void
 	{
 		Context::delete(ServerRequestInterface::class);
+=======
+>>>>>>> Stashed changes
 	}
 }
