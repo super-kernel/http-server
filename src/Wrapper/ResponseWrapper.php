@@ -5,12 +5,15 @@ namespace SuperKernel\HttpServer\Wrapper;
 
 use Laminas\Diactoros\Response;
 use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use SuperKernel\HttpServer\Contract\ResponseInterface;
 
 final class ResponseWrapper implements ResponseInterface
 {
-	private ResponseInterface $response;
+	private PsrResponseInterface $response;
+
+	private \Swoole\Http\Response $swooleResponse;
 
 	public function __construct()
 	{
@@ -77,7 +80,7 @@ final class ResponseWrapper implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
+	public function withStatus(int $code, string $reasonPhrase = ''): PsrResponseInterface
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
@@ -87,11 +90,25 @@ final class ResponseWrapper implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
+	public function getResponse(): PsrResponseInterface
+	{
+		return $this->response;
+	}
+
+	public function getSwooleResponse(): \Swoole\Http\Response
+	{
+		return $this->swooleResponse;
+	}
+
+	public function setSwooleResponse(\Swoole\Http\Response $response): ResponseInterface
+	{
+		$this->swooleResponse = $response;
+
+		return $this;
+	}
+
 	public function __call(string $name, array $arguments): mixed
 	{
-		return call_user_func([
-			                      $this->response,
-			                      $name,
-		                      ], ...$arguments);
+		return $this->getResponse()->{$name}(...$arguments);
 	}
 }

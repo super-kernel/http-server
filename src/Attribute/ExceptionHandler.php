@@ -6,9 +6,9 @@ namespace SuperKernel\HttpServer\Attribute;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-final class Middleware
+final class ExceptionHandler
 {
-	public function __construct(public string $server = '', public int $priority = 0)
+	public function __construct(public string $server, public int $priority = 0)
 	{
 	}
 }

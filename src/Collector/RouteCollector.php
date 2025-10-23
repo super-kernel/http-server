@@ -13,6 +13,7 @@ use SuperKernel\Contract\AttributeCollectorInterface;
 use SuperKernel\Contract\ReflectionCollectorInterface;
 use SuperKernel\HttpServer\Attribute\HttpController;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
+use function strtoupper;
 
 #[Factory]
 final class RouteCollector
@@ -58,20 +59,23 @@ final class RouteCollector
 						$path        = $requestMapping->path;
 						$httpMethods = str_contains($requestMapping->methods, ',')
 							? explode(',', $requestMapping->methods)
-							: $requestMapping->methods;
+							: [$requestMapping->methods];
 
 						$handler = new RouteData(
-							handler    : [
-								             $container->get($class),
-								             $methodName,
-							             ],
+							controller : $class,
+							action     : $methodName,
+							object     : $container->get($class),
 							middlewares: $middlewareCollector->getScanMiddleware($class, $methodName),
 						);
 
-						if (str_starts_with($path, '/')) {
-							$this->containers[$serverName]->addRoute($httpMethods, $path, $handler);
-						} else {
-							$this->containers[$serverName]->addRoute($httpMethods, $attribute->prefix . '/' . $path, $handler);
+						foreach ($httpMethods as $httpMethod) {
+							$httpMethod = strtoupper($httpMethod);
+
+							if (str_starts_with($path, '/')) {
+								$this->containers[$serverName]->addRoute($httpMethod, $path, $handler);
+							} else {
+								$this->containers[$serverName]->addRoute($httpMethod, $attribute->prefix . '/' . $path, $handler);
+							}
 						}
 					}
 				}

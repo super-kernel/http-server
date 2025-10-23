@@ -1,29 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernel\HttpServer\Provider;
+namespace SuperKernel\HttpServer;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface as PsrRequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
-<<<<<<< HEAD
-use SuperKernel\Attribute\Contract;
-=======
->>>>>>> main
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpServer\Context\RequestContext;
 use SuperKernel\HttpServer\Contract\RequestInterface;
 
 #[
-<<<<<<< HEAD
-	Contract(ServerRequestInterface::class),
-=======
->>>>>>> main
+	Provider(RequestInterface::class),
 	Provider(ServerRequestInterface::class),
 ]
-final class RequestProvider implements RequestInterface
+final class Request implements RequestInterface
 {
 	public function getProtocolVersion(): string
 	{
@@ -175,11 +168,18 @@ final class RequestProvider implements RequestInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
+	public function getServerRequest(): ServerRequestInterface
+	{
+		return RequestContext::get();
+	}
+
+	public function getSwooleRequest(): \Swoole\Http\Request
+	{
+		return $this->__call(__FUNCTION__, func_get_args());
+	}
+
 	public function __call(string $name, array $arguments): mixed
 	{
-		return call_user_func([
-			                      RequestContext::get(),
-			                      $name,
-		                      ], ...$arguments);
+		return $this->getServerRequest()->{$name}(...$arguments);
 	}
 }

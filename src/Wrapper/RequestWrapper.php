@@ -6,30 +6,30 @@ namespace SuperKernel\HttpServer\Wrapper;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Uri;
 use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use SuperKernel\HttpServer\Contract\RequestInterface;
 use SuperKernel\HttpServer\Message\SwooleStream;
 use Swoole\Http\Request;
 
-final class RequestWrapper implements ServerRequestInterface
+final readonly class RequestWrapper implements RequestInterface
 {
 	private ServerRequestInterface $serverRequest;
 
-	public function __construct(Request $request)
+	public function __construct(private Request $swooleRequest)
 	{
 		$this->serverRequest = new ServerRequest(
-			serverParams : $request->server,
-			uploadedFiles: $request->files ?? [],
-			uri          : new Uri($request->server['request_uri']),
-			method       : $request->server['request_method'],
+			serverParams : $this->swooleRequest->server,
+			uploadedFiles: $this->swooleRequest->files ?? [],
+			uri          : new Uri($this->swooleRequest->server['request_uri']),
+			method       : $this->swooleRequest->server['request_method'],
 			body         : new SwooleStream(''),
-			headers      : $request->header,
-			cookieParams : $request->cookie ?? [],
-			queryParams  : $request->get ?? [],
-			parsedBody   : $request->post,
-			protocol     : $request->server['server_protocol'],
+			headers      : $this->swooleRequest->header,
+			cookieParams : $this->swooleRequest->cookie ?? [],
+			queryParams  : $this->swooleRequest->get ?? [],
+			parsedBody   : $this->swooleRequest->post,
+			protocol     : $this->swooleRequest->server['server_protocol'],
 		);
 	}
 
@@ -183,11 +183,18 @@ final class RequestWrapper implements ServerRequestInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
+	public function getSwooleRequest(): Request
+	{
+		return $this->swooleRequest;
+	}
+
 	public function __call(string $name, array $arguments): mixed
 	{
-		return call_user_func([
-			                      $this->serverRequest,
-			                      $name,
-		                      ], ...$arguments);
+		return $this->serverRequest->{$name}(...$arguments);
+	}
+
+	public function getServerRequest(): ServerRequestInterface
+	{
+		return $this->serverRequest;
 	}
 }

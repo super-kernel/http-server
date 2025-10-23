@@ -20,8 +20,6 @@ use SuperKernel\HttpServer\Attribute\Middlewares;
 ]
 final class MiddlewareCollector
 {
-	private array $serverMiddlewares = [];
-
 	private array $middlewares = [];
 
 	private ?ReflectionCollectorInterface $reflectionCollector = null {
@@ -38,7 +36,7 @@ final class MiddlewareCollector
 
 	public function getMiddlewares(string $serverName): array
 	{
-		return $this->serverMiddlewares[$serverName];
+		return $this->middlewares[$serverName];
 	}
 
 	/**
@@ -51,7 +49,7 @@ final class MiddlewareCollector
 	 */
 	public function getScanMiddleware(string $class, string $method): array
 	{
-		$classMiddlewares = $this->scanMiddleware(
+		$classMiddlewares  = $this->scanMiddleware(
 			$this->reflectionCollector->reflectClass($class)->getAttributes(Middlewares::class));
 		$methodMiddlewares = $this->scanMiddleware(
 			$this->reflectionCollector->reflectMethod($class, $method)->getAttributes(Middlewares::class));
@@ -75,7 +73,7 @@ final class MiddlewareCollector
 		/* @var array<Middleware> $attributes */
 		foreach ($this->attributeCollector->getAttributes(Middleware::class) as $class => $attributes) {
 			foreach ($attributes as $attribute) {
-				$this->serverMiddlewares[$attribute->server][] = [
+				$this->middlewares[$attribute->server][] = [
 					$this->createInstance($class),
 					$attribute->priority,
 				];

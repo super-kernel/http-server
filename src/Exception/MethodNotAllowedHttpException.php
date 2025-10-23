@@ -5,8 +5,8 @@ namespace SuperKernel\HttpServer\Exception;
 
 final class MethodNotAllowedHttpException extends HttpException
 {
-	public function __construct()
+	public function __construct(string $message)
 	{
-		parent::__construct(403);
+		parent::__construct(403, $message);
 	}
 }

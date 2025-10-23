@@ -29,13 +29,5 @@ final class ResponseContext
 		Context::set(ResponseInterface::class, $response);
 
 		return $response;
-<<<<<<< Updated upstream
-	}
-
-	public static function delete(): void
-	{
-		Context::delete(ResponseInterface::class);
-=======
->>>>>>> Stashed changes
 	}
 }

@@ -5,7 +5,7 @@ namespace SuperKernel\HttpServer\Attribute;
 
 use Attribute;
 
-#[Attribute(Attribute::TARGET_CLASS)]
+#[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
 final class Middlewares
 {
 	/**
@@ -17,10 +17,16 @@ final class Middlewares
 	{
 		foreach ($middlewares as $middleware => $priority) {
 			if (is_int($middleware)) {
-				[$middleware, $priority] = [$priority, 0];
+				[
+					$middleware,
+					$priority,
+				] = [
+					$priority,
+					0,
+				];
 			}
 
-			$this->middlewares[] = new Middleware((string)$middleware, (int)$priority);
+			$this->middlewares[(string)$middleware] = (int)$priority;
 		}
 	}
 }

@@ -2,58 +2,23 @@
 declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Dispatcher;
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-
-=======
 
 use FastRoute\Dispatcher;
->>>>>>> Stashed changes
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-<<<<<<< Updated upstream
-use RuntimeException;
-=======
->>>>>>> main
-
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 use SplPriorityQueue;
-
-final readonly class MiddlewareDispatcher
-{
-<<<<<<< HEAD
-	public function __construct(private \SplPriorityQueue $middlewares)
-=======
-	public function __construct(private SplPriorityQueue $middlewares)
->>>>>>> main
-	{
-	}
-
-	public function dispatch(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
-	{
-		while (!$this->middlewares->isEmpty()) {
-			$middleware = $this->middlewares->top();
-			if (!($middleware instanceof MiddlewareInterface)) {
-				throw new RuntimeException('The MiddlewareProvider not implemented');
-			}
-
-			$response = $middleware->process($request, $handler);
-		}
-=======
-use SplPriorityQueue;
+use SuperKernel\Di\Collector\ReflectionCollector;
 use SuperKernel\Di\Exception\Exception;
 use SuperKernel\HttpServer\Collector\MiddlewareCollector;
 use SuperKernel\HttpServer\Collector\RouteCollector;
 use SuperKernel\HttpServer\Context\MiddlewareContext;
+use SuperKernel\HttpServer\Contract\MiddlewareDispatcherInterface;
+use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
 
-final class MiddlewareDispatcher implements MiddlewareInterface
+final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 {
 	private array $middlewares = [];
 
@@ -62,6 +27,7 @@ final class MiddlewareDispatcher implements MiddlewareInterface
 	public function __construct(
 		private readonly RouteCollector      $routeCollector,
 		private readonly MiddlewareCollector $middlewareCollector,
+		private readonly ReflectionCollector $reflectionCollector,
 	)
 	{
 	}
@@ -107,9 +73,9 @@ final class MiddlewareDispatcher implements MiddlewareInterface
 		}
 
 		return match ($dispatched->status) {
-			Dispatcher::FOUND              => $this->handleFound($dispatched, $request),
 			Dispatcher::NOT_FOUND          => $this->handleNotFound(),
-			Dispatcher::METHOD_NOT_ALLOWED => $this->handleMethodNotAllowed($dispatched->parameters, $request),
+			Dispatcher::FOUND              => $this->handleFound($dispatched),
+			Dispatcher::METHOD_NOT_ALLOWED => $this->handleMethodNotAllowed($dispatched->parameters),
 		};
 	}
 
@@ -119,25 +85,39 @@ final class MiddlewareDispatcher implements MiddlewareInterface
 	}
 
 	/**
-	 * @param array                  $methods
-	 * @param ServerRequestInterface $request
+	 * @param array $methods
 	 *
 	 * @return mixed
-	 * @throws Exception
 	 */
-	private function handleMethodNotAllowed(array $methods, ServerRequestInterface $request): mixed
+	private function handleMethodNotAllowed(array $methods): mixed
 	{
-		throw new Exception('Allow: ' . implode(', ', $methods));
+		throw new MethodNotAllowedHttpException('Allow: ' . implode(', ', $methods));
 	}
 
-	private function handleFound(Dispatched $dispatched, ServerRequestInterface $request)
+	/**
+	 * Provide container injection capabilities during request processing, but avoid exceptions that may occur in some
+	 * scenarios. This requirement should be implemented and improved in the next version.
+	 *
+	 * @param Dispatched $dispatched
+	 *
+	 * @return mixed
+	 */
+	private function handleFound(Dispatched $dispatched): mixed
 	{
-		[
-			$controller,
-			$action,
-		] = $dispatched->handler->handler;
+		$arguments  = [];
+		$handler    = $dispatched->handler;
+		$parameters = $this->reflectionCollector->reflectMethod($handler->controller, $handler->action)->getParameters();
 
-		return $controller->{$action}();
+		foreach ($parameters as $parameter) {
+			$name = $parameter->getName();
+			if (!isset($dispatched->parameters[$name])) {
+				throw new RuntimeException(sprintf('The route parameter "%s" does not exist.', $parameter->getName()));
+			}
+
+			$arguments[] = $dispatched->parameters[$name];
+		}
+
+		return $dispatched->handler->object->{$handler->action}(...$arguments);
 	}
 
 	private function sortMiddlewares(array $middlewares): SplPriorityQueue
@@ -149,6 +129,5 @@ final class MiddlewareDispatcher implements MiddlewareInterface
 		}
 
 		return $middleware;
->>>>>>> Stashed changes
 	}
 }

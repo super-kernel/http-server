@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernel\HttpServer\Provider;
+namespace SuperKernel\HttpServer;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
@@ -14,7 +14,7 @@ use SuperKernel\HttpServer\Contract\ResponseInterface;
 	Provider(ResponseInterface::class),
 	Provider(PsrResponseInterface::class),
 ]
-final class ResponseProvider implements ResponseInterface
+final readonly class Response implements ResponseInterface
 {
 	public function getProtocolVersion(): string
 	{
@@ -86,11 +86,23 @@ final class ResponseProvider implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
+	public function getSwooleResponse(): \Swoole\Http\Response
+	{
+		return $this->__call(__FUNCTION__, func_get_args());
+	}
+
+	public function setSwooleResponse(\Swoole\Http\Response $response): ResponseInterface
+	{
+		return $this->__call(__FUNCTION__, func_get_args());
+	}
+
 	public function __call(string $name, array $arguments): mixed
 	{
-		return call_user_func([
-			                      ResponseContext::get(),
-			                      $name,
-		                      ], ...$arguments);
+		return $this->getResponse()->{$name}(...$arguments);
+	}
+
+	public function getResponse(): PsrResponseInterface
+	{
+		return ResponseContext::get();
 	}
 }

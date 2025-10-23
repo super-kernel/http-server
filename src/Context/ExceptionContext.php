@@ -3,16 +3,16 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Context;
 
-use Psr\Http\Server\MiddlewareInterface;
 use RuntimeException;
 use SplPriorityQueue;
 use SuperKernel\Context\Context;
+use SuperKernel\HttpServer\Contract\ExceptionHandlerInterface;
 
-final class MiddlewareContext
+final class ExceptionContext
 {
 	public static function get(): SplPriorityQueue
 	{
-		$middleware = Context::get(MiddlewareInterface::class);
+		$middleware = Context::get(ExceptionHandlerInterface::class);
 
 		if ($middleware instanceof SplPriorityQueue) {
 			return $middleware;
@@ -28,13 +28,13 @@ final class MiddlewareContext
 
 	public static function has(): bool
 	{
-		return Context::has(MiddlewareInterface::class);
+		return Context::has(ExceptionHandlerInterface::class);
 	}
 
-	public static function set(SplPriorityQueue $middleware): SplPriorityQueue
+	public static function set(SplPriorityQueue $exception): SplPriorityQueue
 	{
-		Context::set(MiddlewareInterface::class, $middleware);
+		Context::set(ExceptionHandlerInterface::class, $exception);
 
-		return $middleware;
+		return $exception;
 	}
 }
