@@ -30,7 +30,8 @@
         "super-kernel/attribute": "^1.1",
         "super-kernel/context": "^1.0",
         "super-kernel/event": "^1.0",
-        "super-kernel/server": "^1.1"
+        "super-kernel/server": "^1.1",
+        "super-kernel/stream": "^1.0"
     },
     "require-dev": {
         "super-kernel/di": "^1.1",

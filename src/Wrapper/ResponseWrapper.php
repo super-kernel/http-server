@@ -5,15 +5,17 @@ namespace SuperKernel\HttpServer\Wrapper;
 
 use Laminas\Diactoros\Response;
 use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
-use SuperKernel\HttpServer\Contract\ResponseInterface;
-use SuperKernel\HttpServer\Message\SwooleStream;
-use function json_encode;
+use SuperKernel\HttpServer\Context\RequestContext;
+use SuperKernel\Stream\EmptyStream;
+use SuperKernel\Stream\JsonStream;
+use SuperKernel\Stream\StandardStream;
+use SuperKernel\Stream\SwooleStream;
 
-final class ResponseWrapper implements ResponseInterface
+final class ResponseWrapper implements \SuperKernel\HttpServer\Contract\ResponseInterface
 {
-	private PsrResponseInterface $response;
+	private readonly ResponseInterface $response;
 
 	private \Swoole\Http\Response $swooleResponse;
 
@@ -82,7 +84,7 @@ final class ResponseWrapper implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function withStatus(int $code, string $reasonPhrase = ''): PsrResponseInterface
+	public function withStatus(int $code, string $reasonPhrase = ''): ResponseInterface
 	{
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
@@ -92,7 +94,7 @@ final class ResponseWrapper implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function getResponse(): PsrResponseInterface
+	public function getResponse(): ResponseInterface
 	{
 		return $this->response;
 	}
@@ -112,5 +114,43 @@ final class ResponseWrapper implements ResponseInterface
 	public function __call(string $name, array $arguments): mixed
 	{
 		return $this->getResponse()->{$name}(...$arguments);
+	}
+
+	public function json(mixed $value, string $charset = 'utf-8', int $flags = 0, int $depth = 512): ResponseInterface
+	{
+		return $this->getResponse()
+			->withAddedHeader('content-type', 'application/json; charset=' . $charset)
+			->withBody(new JsonStream($value, $flags, $depth));
+	}
+
+	public function xml(mixed $data, string $charset = 'utf-8'): ResponseInterface
+	{
+		return $this->getResponse()
+			->withAddedHeader('content-type', 'application/xml; charset=' . $charset)
+			->withBody(new JsonStream(...func_get_args()));
+	}
+
+	public function raw(mixed $data, string $charset = 'utf-8'): ResponseInterface
+	{
+		return $this->getResponse()
+			->withAddedHeader('content-type', 'text/plain; charset=' . $charset)
+			->withBody(new StandardStream($data));
+	}
+
+	public function redirect(string $location, int $statusCode = 302): ResponseInterface
+	{
+		$schema = RequestContext::get()->getUri()->getScheme();
+		$host   = RequestContext::get()->getUri()->getAuthority();
+
+		return $this->getResponse()
+			->withStatus($statusCode)
+			->withAddedHeader('Location', $schema . '://' . $host . '/' . ltrim($location, '/'))
+			->withBody(new EmptyStream());
+	}
+
+	public function chunk(callable $callback): ResponseInterface
+	{
+		return $this->getResponse()
+			->withBody(new SwooleStream(...func_get_args()));
 	}
 }

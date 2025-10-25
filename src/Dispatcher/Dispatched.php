@@ -32,14 +32,4 @@ final class Dispatched
 	{
 		return $this->status === Dispatcher::FOUND;
 	}
-
-	public function isNotFound(): bool
-	{
-		return $this->status === Dispatcher::NOT_FOUND;
-	}
-
-	public function isMethodNotAllowed(): bool
-	{
-		return $this->status === Dispatcher::METHOD_NOT_ALLOWED;
-	}
 }

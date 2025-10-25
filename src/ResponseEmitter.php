@@ -4,10 +4,13 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer;
 
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
+use SuperKernel\Stream\Contract\Stream\SwooleStreamInterface;
+use Swoole\Http\Response as SwooleResponse;
 
 final readonly class ResponseEmitter
 {
-	public function emit(ResponseInterface $response, \Swoole\Http\Response $swooleResponse): void
+	public function emit(ResponseInterface $response, SwooleResponse $swooleResponse): void
 	{
 		$swooleResponse->status($response->getStatusCode(), $response->getReasonPhrase());
 
@@ -35,6 +38,33 @@ final readonly class ResponseEmitter
 			}
 		}
 
-		$swooleResponse->end($response->getBody()->getContents());
+		$this->bodyHandler($response->getBody(), $swooleResponse);
+	}
+
+	private function bodyHandler(StreamInterface $stream, SwooleResponse $response): void
+	{
+		match (true) {
+			$stream instanceof SwooleStreamInterface => $this->handleSwooleStream(...func_get_args()),
+			default                                  => $this->handleDefaultStream(...func_get_args()),
+		};
+	}
+
+	private function handleDefaultStream(StreamInterface $stream, SwooleResponse $response): void
+	{
+		$response->end($stream->getContents());
+	}
+
+	private function handleSwooleStream(SwooleStreamInterface $stream, SwooleResponse $response): void
+	{
+		foreach ($stream->getContent() as $streamContent) {
+			if ($stream->isReadable() && $response->isWritable()) {
+				$response->write((string)$streamContent);
+			} else {
+				break;
+			}
+		}
+
+		$stream->close();
+		$response->end();
 	}
 }

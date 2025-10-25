@@ -6,7 +6,7 @@ namespace SuperKernel\HttpServer\Attribute;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-final class Middleware
+final readonly class Middleware
 {
 	public function __construct(public string $server = '', public int $priority = 0)
 	{

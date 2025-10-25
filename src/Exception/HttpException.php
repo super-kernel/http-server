@@ -15,7 +15,7 @@ class HttpException extends RuntimeException
 	{
 		$this->statusCode = $statusCode;
 
-		$message ??= new ResponseWrapper()->withStatus($statusCode)->getReasonPhrase();
+		$message = $message ?: new ResponseWrapper()->withStatus($statusCode)->getReasonPhrase();
 
 		parent::__construct($message, $code, $previous);
 	}

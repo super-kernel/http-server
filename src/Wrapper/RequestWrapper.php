@@ -10,7 +10,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use SuperKernel\HttpServer\Contract\RequestInterface;
-use SuperKernel\HttpServer\Message\SwooleStream;
+use SuperKernel\Stream\StandardStream;
 use Swoole\Http\Request;
 
 final readonly class RequestWrapper implements RequestInterface
@@ -24,7 +24,7 @@ final readonly class RequestWrapper implements RequestInterface
 			uploadedFiles: $this->swooleRequest->files ?? [],
 			uri          : new Uri($this->swooleRequest->server['request_uri']),
 			method       : $this->swooleRequest->server['request_method'],
-			body         : new SwooleStream(''),
+			body         : new StandardStream(''),
 			headers      : $this->swooleRequest->header,
 			cookieParams : $this->swooleRequest->cookie ?? [],
 			queryParams  : $this->swooleRequest->get ?? [],

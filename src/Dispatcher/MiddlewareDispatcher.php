@@ -8,7 +8,6 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use RuntimeException;
 use SplPriorityQueue;
 use SuperKernel\Di\Contract\ResolverFactoryInterface;
 use SuperKernel\Di\Definition\ParameterDefinition;
@@ -17,6 +16,9 @@ use SuperKernel\HttpServer\Context\MiddlewareContext;
 use SuperKernel\HttpServer\Contract\MiddlewareDispatcherInterface;
 use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
+use SuperKernel\Stream\JsonStream;
+use SuperKernel\Stream\StandardStream;
+use function is_array;
 
 final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 {
@@ -112,7 +114,10 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 			return $response;
 		}
 
-		throw new RuntimeException('The requested object does not implement ResponseInterface.');
+		return match (true) {
+			is_array($response) => $this->response->withBody(new JsonStream($response)),
+			default             => $this->response->withBody(new StandardStream($response)),
+		};
 	}
 
 	private function sortMiddlewares(array $middlewares): SplPriorityQueue

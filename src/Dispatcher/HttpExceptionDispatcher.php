@@ -8,8 +8,8 @@ use SplPriorityQueue;
 use SuperKernel\HttpServer\Context\ExceptionContext;
 use SuperKernel\HttpServer\Contract\ExceptionDispatcherInterface;
 use SuperKernel\HttpServer\Exception\HttpException;
-use SuperKernel\HttpServer\Message\SwooleStream;
 use SuperKernel\HttpServer\Wrapper\ResponseWrapper;
+use SuperKernel\Stream\StandardStream;
 use Throwable;
 
 final readonly class HttpExceptionDispatcher implements ExceptionDispatcherInterface
@@ -31,11 +31,13 @@ final readonly class HttpExceptionDispatcher implements ExceptionDispatcherInter
 			return ExceptionContext::get()->extract()->handle($throwable, $this);
 		}
 
+		$response = new ResponseWrapper();
+
 		if ($throwable instanceof HttpException) {
-			return new ResponseWrapper()->withStatus($throwable->getStatusCode())->withBody(
-				new SwooleStream($throwable->getMessage()));
+			return $response->withStatus($throwable->getStatusCode())->withBody(
+				new StandardStream($throwable->getMessage()));
 		}
 
-		return new ResponseWrapper()->withStatus(400);
+		return $response->withStatus(400);
 	}
 }
