@@ -96,13 +96,13 @@ final readonly class Response implements ResponseInterface
 		return $this->__call(__FUNCTION__, func_get_args());
 	}
 
-	public function __call(string $name, array $arguments): mixed
-	{
-		return $this->getResponse()->{$name}(...$arguments);
-	}
-
 	public function getResponse(): PsrResponseInterface
 	{
 		return ResponseContext::get();
+	}
+
+	public function __call(string $name, array $arguments): mixed
+	{
+		return $this->getResponse()->{$name}(...$arguments);
 	}
 }

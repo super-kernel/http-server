@@ -7,9 +7,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use SuperKernel\HttpServer\Context\RequestContext;
 use SuperKernel\HttpServer\Context\ResponseContext;
-use SuperKernel\HttpServer\Dispatcher\HttpExceptionDispatcher;
+use SuperKernel\HttpServer\Contract\ExceptionDispatcherInterface;
 use SuperKernel\HttpServer\Dispatcher\MiddlewareDispatcher;
-use SuperKernel\HttpServer\Dispatcher\RequestHandler;
 use SuperKernel\HttpServer\ResponseEmitter;
 use SuperKernel\HttpServer\Wrapper\RequestWrapper;
 use SuperKernel\HttpServer\Wrapper\ResponseWrapper;
@@ -19,24 +18,15 @@ use Throwable;
 
 final readonly class OnRequestEvent
 {
-	private RequestHandlerInterface $requestHandler;
-
-	private string $serverName;
+	private ResponseEmitter $responseEmitter;
 
 	public function __construct(
-		private HttpExceptionDispatcher $httpExceptionDispatcher,
-		private MiddlewareDispatcher    $middlewareDispatcher,
-		private ResponseEmitter         $responseEmitter,
+		private RequestHandlerInterface      $requestHandler,
+		private ExceptionDispatcherInterface $exceptionDispatcher,
+		private MiddlewareDispatcher         $middlewareDispatcher,
 	)
 	{
-	}
-
-	public function setServerName(string $serverName): void
-	{
-		$this->serverName = $serverName;
-
-		$this->middlewareDispatcher->setServerName($serverName);
-		$this->requestHandler = new RequestHandler($this->middlewareDispatcher);
+		$this->responseEmitter = new ResponseEmitter();
 	}
 
 	/**
@@ -45,7 +35,8 @@ final readonly class OnRequestEvent
 	 *
 	 * @return void
 	 */
-	public function __invoke(Request $request, Response $response): void
+	public
+	function handle(Request $request, Response $response): void
 	{
 		//  WebSocket handshake, not entering the transmitter process.
 		if ($request->header['upgrade'] ?? '' === 'websocket') {
@@ -58,7 +49,7 @@ final readonly class OnRequestEvent
 			$psr7Response = $this->requestHandler->handle($psr7Request);
 		}
 		catch (Throwable $throwable) {
-			$psr7Response = $this->httpExceptionDispatcher->dispatcher($this->serverName, $throwable);
+			$psr7Response = $this->exceptionDispatcher->dispatcher($throwable);
 		}
 		finally {
 			$this->responseEmitter->emit($psr7Response, $response);
@@ -71,7 +62,8 @@ final readonly class OnRequestEvent
 	 *
 	 * @return ServerRequestInterface
 	 */
-	private function initRequestAndResponse(Request $request, Response $response): ServerRequestInterface
+	private
+	function initRequestAndResponse(Request $request, Response $response): ServerRequestInterface
 	{
 		RequestContext::set($psr7Request = new RequestWrapper($request));
 		ResponseContext::set(new ResponseWrapper()->setSwooleResponse($response));

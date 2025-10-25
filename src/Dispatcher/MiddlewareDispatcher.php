@@ -4,15 +4,15 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer\Dispatcher;
 
 use FastRoute\Dispatcher;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 use SplPriorityQueue;
-use SuperKernel\Di\Collector\ReflectionCollector;
+use SuperKernel\Di\Contract\ResolverFactoryInterface;
+use SuperKernel\Di\Definition\ParameterDefinition;
 use SuperKernel\Di\Exception\Exception;
-use SuperKernel\HttpServer\Collector\MiddlewareCollector;
-use SuperKernel\HttpServer\Collector\RouteCollector;
 use SuperKernel\HttpServer\Context\MiddlewareContext;
 use SuperKernel\HttpServer\Contract\MiddlewareDispatcherInterface;
 use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
@@ -20,22 +20,20 @@ use SuperKernel\HttpServer\Exception\NotFoundHttpException;
 
 final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 {
-	private array $middlewares = [];
-
-	private Dispatcher $dispatcher;
-
-	public function __construct(
-		private readonly RouteCollector      $routeCollector,
-		private readonly MiddlewareCollector $middlewareCollector,
-		private readonly ReflectionCollector $reflectionCollector,
-	)
-	{
+	private ?ResolverFactoryInterface $resolverDispatcher = null {
+		get => $this->resolverDispatcher ??= $this->container->get(ResolverFactoryInterface::class);
 	}
 
-	public function setServerName(string $serverName): void
+	private ?ResponseInterface $response = null {
+		get => $this->response ??= $this->container->get(ResponseInterface::class);
+	}
+
+	public function __construct(
+		private readonly ContainerInterface $container,
+		private readonly Dispatcher         $dispatcher,
+		private readonly array              $middlewares = [],
+	)
 	{
-		$this->dispatcher  = new Dispatcher\GroupCountBased($this->routeCollector->getRouteCollector($serverName)->getData());
-		$this->middlewares = $this->middlewareCollector->getMiddlewares($serverName);
 	}
 
 	public function dispatch(ServerRequestInterface $request): ServerRequestInterface
@@ -95,8 +93,8 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 	}
 
 	/**
-	 * Provide container injection capabilities during request processing, but avoid exceptions that may occur in some
-	 * scenarios. This requirement should be implemented and improved in the next version.
+	 * @waring Route discovery is handled by the parameter resolver in `super-kernel/di`. If another DI container is
+	 *         used, remap the provider of `SuperKernel\HttpServer\Contract\MiddlewareDispatcherInterface`.
 	 *
 	 * @param Dispatched $dispatched
 	 *
@@ -104,20 +102,17 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 	 */
 	private function handleFound(Dispatched $dispatched): mixed
 	{
-		$arguments  = [];
-		$handler    = $dispatched->handler;
-		$parameters = $this->reflectionCollector->reflectMethod($handler->controller, $handler->action)->getParameters();
+		$handler             = $dispatched->handler;
+		$parameterDefinition = new ParameterDefinition($handler->controller, $handler->action, $dispatched->parameters);
+		$arguments           = $this->resolverDispatcher->getResolver($parameterDefinition)->resolve($parameterDefinition);
 
-		foreach ($parameters as $parameter) {
-			$name = $parameter->getName();
-			if (!isset($dispatched->parameters[$name])) {
-				throw new RuntimeException(sprintf('The route parameter "%s" does not exist.', $parameter->getName()));
-			}
+		$response = $dispatched->handler->object->{$handler->action}(...$arguments);
 
-			$arguments[] = $dispatched->parameters[$name];
+		if ($response instanceof ResponseInterface) {
+			return $response;
 		}
 
-		return $dispatched->handler->object->{$handler->action}(...$arguments);
+		throw new RuntimeException('The requested object does not implement ResponseInterface.');
 	}
 
 	private function sortMiddlewares(array $middlewares): SplPriorityQueue

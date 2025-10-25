@@ -8,6 +8,8 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use SuperKernel\HttpServer\Contract\ResponseInterface;
+use SuperKernel\HttpServer\Message\SwooleStream;
+use function json_encode;
 
 final class ResponseWrapper implements ResponseInterface
 {

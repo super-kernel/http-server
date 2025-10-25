@@ -27,6 +27,8 @@ final readonly class IndexController
 	#[RequestMapping(path: 'index/{name}', methods: 'post')]
 	public function index(string $name): ResponseInterface
 	{
+		var_dump('handle here.');
+
 		return $this->response
 			->withBody(
 				new SwooleStream(
