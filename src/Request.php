@@ -8,7 +8,7 @@ use Psr\Http\Message\RequestInterface as PsrRequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
-use SuperKernel\Attribute\Provider;
+use SuperKernel\Di\Attribute\Provider;
 use SuperKernel\HttpServer\Context\RequestContext;
 use SuperKernel\HttpServer\Contract\RequestInterface;
 

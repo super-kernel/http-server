@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Listener;
 
-use SuperKernel\Attribute\Listener;
 use SuperKernel\Contract\ListenerInterface;
+use SuperKernel\EventDispatcher\Attribute\Listener;
 use SuperKernel\HttpServer\Factory\OnRequestEventFactory;
 use SuperKernel\Server\Event\BeforeServerStart;
 use SuperKernel\Server\ServerType;

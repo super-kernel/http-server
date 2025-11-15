@@ -6,7 +6,7 @@ namespace SuperKernel\HttpServer;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
-use SuperKernel\Attribute\Provider;
+use SuperKernel\Di\Attribute\Provider;
 use SuperKernel\HttpServer\Context\ResponseContext;
 use SuperKernel\HttpServer\Contract\ResponseInterface as SuperKernelResponseInterface;
 

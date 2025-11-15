@@ -9,9 +9,9 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Server\MiddlewareInterface as PsrMiddlewareInterface;
 use ReflectionAttribute;
 use RuntimeException;
-use SuperKernel\Attribute\Factory;
-use SuperKernel\Contract\AttributeCollectorInterface;
-use SuperKernel\Contract\ReflectionCollectorInterface;
+use SuperKernel\Di\Attribute\Factory;
+use SuperKernel\Di\Contract\AttributeCollectorInterface;
+use SuperKernel\Di\Contract\ReflectionCollectorInterface;
 use SuperKernel\HttpServer\Attribute\Middleware;
 use SuperKernel\HttpServer\Attribute\Middlewares;
 
