@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace SuperKernelTest\HttpServer\Config;
 
-use SuperKernel\Attribute\Configuration;
+use SuperKernel\Config\Attribute\Configuration;
 use SuperKernel\Server\Mode;
 use SuperKernel\Server\ServerConfig;
 use SuperKernel\Server\ServerConfigInterface;
 use SuperKernel\Server\ServerType;
 use Swoole\Constant;
 
-#[Configuration(ServerConfigInterface::class)]
+#[Configuration]
 final class Server implements ServerConfigInterface
 {
 	public function getMode(): Mode

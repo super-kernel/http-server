@@ -1,59 +1,34 @@
 <?php
 declare(strict_types=1);
 
-namespace SuperKernel\HttpServer\Dispatcher;
+namespace SuperKernel\HttpServer;
 
 use FastRoute\Dispatcher;
-use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use SplPriorityQueue;
+use SuperKernel\Di\Attribute\Provider;
 use SuperKernel\Di\Contract\ResolverFactoryInterface;
 use SuperKernel\Di\Definition\ParameterDefinition;
 use SuperKernel\Di\Exception\Exception;
-use SuperKernel\HttpServer\Context\MiddlewareContext;
-use SuperKernel\HttpServer\Contract\MiddlewareDispatcherInterface;
 use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
+use SuperKernel\HttpServer\Router\Dispatched;
 use SuperKernel\Stream\JsonStream;
 use SuperKernel\Stream\StandardStream;
 use function is_array;
 
-final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
+#[
+	Provider(MiddlewareInterface::class),
+]
+final readonly class Middleware implements MiddlewareInterface
 {
-	private ?ResolverFactoryInterface $resolverDispatcher = null {
-		get => $this->resolverDispatcher ??= $this->container->get(ResolverFactoryInterface::class);
-	}
-
-	private ?ResponseInterface $response = null {
-		get => $this->response ??= $this->container->get(ResponseInterface::class);
-	}
-
 	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly Dispatcher         $dispatcher,
-		private readonly array              $middlewares = [],
+		private ResponseInterface        $response,
+		private ResolverFactoryInterface $resolverDispatcher,
 	)
 	{
-	}
-
-	public function dispatch(ServerRequestInterface $request): ServerRequestInterface
-	{
-		$routes = $this->dispatcher->dispatch($request->getMethod(), $request->getUri()->getPath());
-
-		$dispatched = new Dispatched($routes);
-
-		$middlewares = $this->middlewares;
-
-		if ($dispatched->isFound()) {
-			$middlewares = array_merge($middlewares, $dispatched->handler->middlewares);
-		}
-
-		MiddlewareContext::set($this->sortMiddlewares($middlewares));
-
-		return $request
-			->withAttribute(Dispatched::class, $dispatched);
 	}
 
 	/**
@@ -68,6 +43,15 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 		/* @var Dispatched $dispatched */
 		$dispatched = $request->getAttribute(Dispatched::class);
 
+		$middlewareQueue = $dispatched->middleware;
+
+		if (false === $middlewareQueue->isEmpty()) {
+			/* @var MiddlewareInterface $middleware */
+			$middleware = $middlewareQueue->extract();
+
+			return $middleware->process($request, $handler);
+		}
+
 		if (!$dispatched instanceof Dispatched) {
 			throw new Exception(sprintf('The dispatched object is not a %s object.', Dispatched::class));
 		}
@@ -81,15 +65,10 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 
 	private function handleNotFound()
 	{
-		throw new NotFoundHttpException();
+		throw new NotFoundHttpException;
 	}
 
-	/**
-	 * @param array $methods
-	 *
-	 * @return mixed
-	 */
-	private function handleMethodNotAllowed(array $methods): mixed
+	private function handleMethodNotAllowed(array $methods)
 	{
 		throw new MethodNotAllowedHttpException('Allow: ' . implode(', ', $methods));
 	}
@@ -100,15 +79,21 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 	 *
 	 * @param Dispatched $dispatched
 	 *
-	 * @return mixed
+	 * @return ResponseInterface
 	 */
-	private function handleFound(Dispatched $dispatched): mixed
+	private function handleFound(Dispatched $dispatched): ResponseInterface
 	{
-		$handler             = $dispatched->handler;
-		$parameterDefinition = new ParameterDefinition($handler->controller, $handler->action, $dispatched->parameters);
+		$routeData           = $dispatched->handler;
+		$parameterDefinition = new ParameterDefinition($routeData->controller, $routeData->action, $dispatched->parameters);
 		$arguments           = $this->resolverDispatcher->getResolver($parameterDefinition)->resolve($parameterDefinition);
 
-		$response = $dispatched->handler->object->{$handler->action}(...$arguments);
+		$response = call_user_func(
+			callback: [
+				          $routeData->controller,
+				          $routeData->action,
+			          ],
+			args    : $arguments,
+		);
 
 		if ($response instanceof ResponseInterface) {
 			return $response;
@@ -118,16 +103,5 @@ final class MiddlewareDispatcher implements MiddlewareDispatcherInterface
 			is_array($response) => $this->response->withBody(new JsonStream($response)),
 			default             => $this->response->withBody(new StandardStream($response)),
 		};
-	}
-
-	private function sortMiddlewares(array $middlewares): SplPriorityQueue
-	{
-		$middleware = new SplPriorityQueue;
-
-		foreach ($middlewares as $item) {
-			$middleware->insert($item[0], $item[1]);
-		}
-
-		return $middleware;
 	}
 }

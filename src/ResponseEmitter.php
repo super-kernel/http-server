@@ -13,6 +13,7 @@ final readonly class ResponseEmitter
 	public function emit(ResponseInterface $response, SwooleResponse $swooleResponse): void
 	{
 		$swooleResponse->status($response->getStatusCode(), $response->getReasonPhrase());
+		$swooleResponse->header('server', 'SuperKernel');
 
 		foreach ($response->getHeaders() as $name => $values) {
 			foreach ($values as $value) {

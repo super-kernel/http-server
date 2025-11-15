@@ -5,15 +5,15 @@ namespace SuperKernelTest\HttpServer\Controller;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use SuperKernel\Di\Annotation\Autowired;
-use SuperKernel\HttpServer\Attribute\HttpController;
+use SuperKernel\Di\Attribute\Autowired;
+use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\Middlewares;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Contract\ResponseInterface;
 use SuperKernelTest\HttpServer\Middleware\BeforeMiddleware;
 
 #[
-	HttpController(prefix: '/index', server: 'http'),
+	Controller(prefix: '/index', server: 'http'),
 	Middlewares([
 		BeforeMiddleware::class,
 	]),

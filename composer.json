@@ -13,12 +13,6 @@
             "SuperKernelTest\\HttpServer\\": "tests/"
         }
     },
-    "authors": [
-        {
-            "name": "wheakerd",
-            "email": "wheakerd@gmail.com"
-        }
-    ],
     "minimum-stability": "stable",
     "require": {
         "php": ">=8.4",

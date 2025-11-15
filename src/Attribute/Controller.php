@@ -6,7 +6,7 @@ namespace SuperKernel\HttpServer\Attribute;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-final readonly class HttpController
+final readonly class Controller
 {
 	public function __construct(public string $prefix = '', public string $server = 'http')
 	{

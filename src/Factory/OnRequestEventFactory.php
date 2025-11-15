@@ -3,64 +3,50 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Factory;
 
-use FastRoute\Dispatcher;
-use FastRoute\Dispatcher\GroupCountBased;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use SuperKernel\Di\Contract\ResolverFactoryInterface;
+use SuperKernel\Di\Definition\ParameterDefinition;
 use SuperKernel\HttpServer\CallbackEvent\OnRequestEvent;
-use SuperKernel\HttpServer\Collector\MiddlewareCollector;
-use SuperKernel\HttpServer\Collector\RouteCollector;
-use SuperKernel\HttpServer\Contract\ExceptionDispatcherFactoryInterface;
-use SuperKernel\HttpServer\Dispatcher\MiddlewareDispatcher;
-use SuperKernel\HttpServer\Dispatcher\RequestHandler;
+use SuperKernel\HttpServer\RequestHandler;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 
 final class OnRequestEventFactory
 {
-	private ?ExceptionDispatcherFactoryInterface $exceptionDispatcherFactory = null {
-		get => $this->exceptionDispatcherFactory = $this->container->get(ExceptionDispatcherFactoryInterface::class);
-	}
+    private ?ResolverFactoryInterface $resolverFactory = null {
+        get => $this->resolverFactory ??= $this->container->get(ResolverFactoryInterface::class);
+    }
 
-	private ?RouteCollector $routeCollector = null {
-		get => $this->routeCollector ??= $this->container->get(RouteCollector::class);
-	}
+    private ?RouteDispatcherFactory $routeDispatcherFactory = null {
+        get => $this->routeDispatcherFactory ??= $this->container->get(RouteDispatcherFactory::class);
+    }
 
-	private ?MiddlewareCollector $middlewareCollector = null {
-		get => $this->middlewareCollector ??= $this->container->get(MiddlewareCollector::class);
-	}
+    public function __construct(private readonly ContainerInterface $container)
+    {
+    }
 
-	public function __construct(private readonly ContainerInterface $container)
-	{
-	}
+    public function getEventCallback(string $serverName): callable
+    {
+        $requestHandler = $this->getRequestHandler($serverName);
 
-	public function getEventCallback(string $serverName): callable
-	{
-		$middlewareDispatcher = $this->getMiddlewareDispatcher($serverName);
-		$requestHandler       = new RequestHandler($middlewareDispatcher);
-		$exceptionDispatcher  = $this->exceptionDispatcherFactory->getDispatcher($serverName);
-		$onRequestEvent       = new OnRequestEvent(
-			requestHandler      : $requestHandler,
-			exceptionDispatcher : $exceptionDispatcher,
-			middlewareDispatcher: $middlewareDispatcher,
-		);
+        $onRequestEvent = new OnRequestEvent($requestHandler);
 
-		return fn(Request $request, Response $response) => $onRequestEvent->handle($request, $response);
-	}
+        return fn(Request $request, Response $response) => $onRequestEvent->handle($request, $response);
+    }
 
-	private function getDispatcher(string $serverName): Dispatcher
-	{
-		return new GroupCountBased($this->routeCollector->getRouteCollector($serverName)->getData());
-	}
+    private function getRequestHandler(string $serverName): RequestHandlerInterface
+    {
+        $routeDispatcher = $this->routeDispatcherFactory->getDispatcher($serverName);
 
-	private function getMiddlewareDispatcher(string $serverName): MiddlewareDispatcher
-	{
-		$middlewares = $this->middlewareCollector->getMiddlewares($serverName);
-		$dispatcher  = $this->getDispatcher($serverName);
+        $parameterDefinition = new ParameterDefinition(
+            classname: RequestHandler::class,
+            methodName: '__construct',
+            parameters: ['routeDispatcher' => $routeDispatcher],
+        );
 
-		return new MiddlewareDispatcher(
-			container  : $this->container,
-			dispatcher : $dispatcher,
-			middlewares: $middlewares,
-		);
-	}
+        $arguments = $this->resolverFactory->getResolver($parameterDefinition)->resolve($parameterDefinition);
+
+        return new RequestHandler(...$arguments);
+    }
 }

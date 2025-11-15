@@ -8,14 +8,15 @@ use SuperKernel\EventDispatcher\Attribute\Listener;
 use SuperKernel\HttpServer\Factory\OnRequestEventFactory;
 use SuperKernel\Server\Event\BeforeServerStart;
 use SuperKernel\Server\ServerType;
-use Swoole\Server;
+use Swoole\Coroutine\Http\Server;
+use Swoole\Server as SwooleServer;
 
 #[
 	Listener(BeforeServerStart::class),
 ]
 final readonly class BeforeServerStartListener implements ListenerInterface
 {
-	public function __construct(private OnRequestEventFactory $onRequestEventFactory)
+	public function __construct(private OnRequestEventFactory $factory)
 	{
 	}
 
@@ -32,11 +33,11 @@ final readonly class BeforeServerStartListener implements ListenerInterface
 			return;
 		}
 
-		$callback = $this->onRequestEventFactory->getEventCallback($event->config->name);
+		$callback = $this->factory->getEventCallback($event->config->name);
 
 		match (true) {
-			$event->server instanceof Server                        => $event->server->on('request', $callback),
-			$event->server instanceof \Swoole\Coroutine\Http\Server => $event->server->handle('/', $callback),
+			$event->server instanceof Server       => $event->server->handle('/', $callback),
+			$event->server instanceof SwooleServer => $event->server->on('request', $callback),
 		};
 	}
 }

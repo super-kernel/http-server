@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer\Contract;
 
+use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
 interface ExceptionHandlerInterface
 {
-    public function handle(Throwable $throwable, ExceptionDispatcherInterface $dispatcher): \Psr\Http\Message\ResponseInterface;
+	public function handle(Throwable $throwable, ResponseInterface $response): ResponseInterface;
+
+	public function isStopPropagation(): bool;
 }

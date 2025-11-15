@@ -11,8 +11,6 @@ final class AfterMiddleware implements MiddlewareInterface
 {
 	public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
 	{
-		var_dump(222222);
-
 		return $handler->handle($request);
 	}
 }
