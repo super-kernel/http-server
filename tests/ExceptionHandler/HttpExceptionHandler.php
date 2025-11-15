@@ -8,7 +8,6 @@ use SuperKernel\HttpServer\Attribute\ExceptionHandler;
 use SuperKernel\HttpServer\Contract\ExceptionHandlerInterface;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
 use SuperKernel\Stream\StandardStream;
-use SuperKernel\Stream\SwooleStream;
 use Throwable;
 
 #[ExceptionHandler(server: 'http')]
@@ -20,7 +19,7 @@ final readonly class HttpExceptionHandler implements ExceptionHandlerInterface
 			return $response
 				->withStatus(404)
 				->withBody(
-					new SwooleStream('Test Result: Not Found'),
+					new StandardStream('Test Result: Not Found'),
 				);
 		}
 

@@ -22,6 +22,7 @@ use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Router\MiddlewareCollector;
 use SuperKernel\HttpServer\Router\RouteData;
 use SuperKernel\HttpServer\Router\RouteDispatcher;
+use function ltrim;
 use function str_starts_with;
 use function strtoupper;
 
@@ -109,7 +110,7 @@ final class RouteDispatcherFactory
 
 			$path = str_starts_with($requestMapping->path, '/')
 				? $requestMapping->path
-				: $controller->prefix . '/' . $requestMapping->path;
+				: ltrim($controller->prefix) . '/' . $requestMapping->path;
 
 			$methods = str_contains($requestMapping->methods, ',')
 				? explode(',', $requestMapping->methods)
