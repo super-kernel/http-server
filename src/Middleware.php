@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer;
 
 use FastRoute\Dispatcher;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -25,6 +28,7 @@ use function is_array;
 final readonly class Middleware implements MiddlewareInterface
 {
 	public function __construct(
+		private ContainerInterface       $container,
 		private ResponseInterface        $response,
 		private ResolverFactoryInterface $resolverDispatcher,
 	)
@@ -36,7 +40,9 @@ final readonly class Middleware implements MiddlewareInterface
 	 * @param RequestHandlerInterface $handler
 	 *
 	 * @return ResponseInterface
+	 * @throws ContainerExceptionInterface
 	 * @throws Exception
+	 * @throws NotFoundExceptionInterface
 	 */
 	public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
 	{
@@ -80,6 +86,8 @@ final readonly class Middleware implements MiddlewareInterface
 	 * @param Dispatched $dispatched
 	 *
 	 * @return ResponseInterface
+	 * @throws ContainerExceptionInterface
+	 * @throws NotFoundExceptionInterface
 	 */
 	private function handleFound(Dispatched $dispatched): ResponseInterface
 	{
@@ -87,13 +95,9 @@ final readonly class Middleware implements MiddlewareInterface
 		$parameterDefinition = new ParameterDefinition($routeData->controller, $routeData->action, $dispatched->parameters);
 		$arguments           = $this->resolverDispatcher->getResolver($parameterDefinition)->resolve($parameterDefinition);
 
-		$response = call_user_func(
-			callback: [
-				          $routeData->controller,
-				          $routeData->action,
-			          ],
-			args    : $arguments,
-		);
+		$controller = $this->container->get($routeData->controller);
+
+		$response = $controller->{$routeData->action}($arguments);
 
 		if ($response instanceof ResponseInterface) {
 			return $response;
