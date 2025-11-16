@@ -6,7 +6,6 @@ namespace SuperKernel\HttpServer\Factory;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 use SplPriorityQueue;
 use SuperKernel\Di\Attribute\Factory;
@@ -28,13 +27,9 @@ final class ExceptionDispatcherFactory implements ExceptionDispatcherFactoryInte
 	 */
 	private array $exceptions = [];
 
-	public function __construct(private readonly LoggerInterface $logger)
-	{
-	}
-
 	public function getDispatcher(string $serverName): ExceptionDispatcher
 	{
-		return new ExceptionDispatcher($this->exceptions[$serverName] ?? new SplPriorityQueue, $this->logger);
+		return new ExceptionDispatcher($this->exceptions[$serverName] ?? new SplPriorityQueue);
 	}
 
 	/**

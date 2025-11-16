@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer;
 
 use Psr\Http\Message\ResponseInterface;
-use Psr\Log\LoggerInterface;
 use SplPriorityQueue;
 use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
@@ -17,7 +16,7 @@ final class ExceptionDispatcher
 		get => clone $this->exceptionHandler;
 	}
 
-	public function __construct(SplPriorityQueue $exceptionHandler, private readonly LoggerInterface $logger)
+	public function __construct(SplPriorityQueue $exceptionHandler)
 	{
 		$this->exceptionHandler = $exceptionHandler;
 	}
@@ -34,7 +33,6 @@ final class ExceptionDispatcher
 			}
 		}
 		catch (Throwable $throwable) {
-			$this->logger->error($throwable->getMessage());
 		}
 
 		return match (true) {
