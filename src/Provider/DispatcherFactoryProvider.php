@@ -45,7 +45,13 @@ final readonly class DispatcherFactoryProvider
 				/* @var RequestMapping $requestMapping */
 				$requestMapping = $requestMappingAnnotation->getInstance();
 
-				$action = $requestMappingAnnotation->getMethod();
+				try {
+					$action = $requestMappingAnnotation->getMethod();
+				}
+				catch (\Throwable $throwable) {
+					var_dump($throwable->getMessage());
+				}
+
 
 				$routeData = new RouteData(
 					controller : $controllerClass,

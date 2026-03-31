@@ -32,6 +32,8 @@ final readonly class ExceptionDispatcherFactory implements ExceptionDispatcherFa
 	 */
 	public function __construct(ContainerInterface $container, AnnotationCollectorInterface $annotationCollector)
 	{
+		$exceptions = [];
+
 		foreach ($annotationCollector->getClassesByAttribute(ExceptionHandler::class) as $annotation) {
 			$class = $annotation->getClass();
 
@@ -45,14 +47,14 @@ final readonly class ExceptionDispatcherFactory implements ExceptionDispatcherFa
 					sprintf('The %s class must implement %s', $class, ExceptionHandlerInterface::class));
 			}
 
-			if (!isset($this->exceptions[$serverName])) {
-				$this->exceptions[$serverName] = new SplPriorityQueue();
+			if (!isset($exceptions[$serverName])) {
+				$exceptions[$serverName] = new SplPriorityQueue();
 			}
 
-			$this->exceptions[$serverName]->insert($container->get($class), $attributeInstance->priority);
+			$exceptions[$serverName]->insert($container->get($class), $attributeInstance->priority);
 		}
 
-		return $this;
+		$this->exceptions = $exceptions;
 	}
 
 	public function getDispatcher(string $serverName): ExceptionDispatcher

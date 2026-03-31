@@ -28,13 +28,10 @@ final readonly class IndexController
 	}
 
 	#[RequestMapping(path: 'index', methods: 'get')]
-	public function index(): MessageInterface
+	public function index(): string
 	{
-		return $this->response
-			->chunk(function () {
-				yield 1;
-				yield 2;
-				yield 3;
-			});
+		var_dump(12121212);
+
+		return '123';
 	}
 }

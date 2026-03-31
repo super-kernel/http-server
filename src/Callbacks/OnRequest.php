@@ -6,7 +6,6 @@ namespace SuperKernel\HttpServer\Callbacks;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use SuperKernel\Attribute\Autowired;
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpServer\Context\RequestContext;
 use SuperKernel\HttpServer\Context\ResponseContext;

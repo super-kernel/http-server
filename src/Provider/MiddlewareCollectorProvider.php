@@ -71,16 +71,18 @@ final class MiddlewareCollectorProvider
 					);
 				}
 
-				$controller = $annotation->getClass();
+
 				if ($annotation->compatible(AnnotationInterface::TARGET_CLASS)) {
+					$controller = $annotation->getClass();
 					if (!isset($controllerMiddlewares[$controller])) {
 						$controllerMiddlewares[$controller] = new SplPriorityQueue();
 					}
 					$controllerMiddlewares[$controller]->insert($container->get($middleware), $priority);
 				}
 
-				$action = $annotation->getMethod();
 				if ($annotation->compatible(AnnotationInterface::TARGET_METHOD)) {
+					$controller = $annotation->getClass();
+					$action = $annotation->getMethod();
 					if (!isset($actionMiddlewares[$controller])) {
 						$actionMiddlewares[$controller][$action] = new SplPriorityQueue();
 					}

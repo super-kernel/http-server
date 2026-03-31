@@ -19,10 +19,10 @@ use SuperKernel\Di\Resolver\MethodResolver;
 use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
 use SuperKernel\HttpServer\Router\Dispatched;
-use SuperKernel\Stream\JsonStream;
-use SuperKernel\Stream\StandardStream;
+use SuperKernel\Stream\SwooleStream;
 use function implode;
 use function is_array;
+use function json_encode;
 use function sprintf;
 
 #[Provider(MiddlewareInterface::class)]
@@ -64,11 +64,17 @@ final readonly class Middleware implements MiddlewareInterface
 				sprintf('The dispatched object is not a %s object.', Dispatched::class));
 		}
 
-		return match ($dispatched->status) {
+		var_dump($dispatched->status);
+
+		$response = match ($dispatched->status) {
 			Dispatcher::NOT_FOUND          => $this->handleNotFound(),
 			Dispatcher::FOUND              => $this->handleFound($dispatched),
 			Dispatcher::METHOD_NOT_ALLOWED => $this->handleMethodNotAllowed($dispatched->parameters),
 		};
+
+		var_dump($response, $this->transferToResponse($response));
+
+		return $this->transferToResponse($response);
 	}
 
 	private function handleNotFound()
@@ -84,11 +90,11 @@ final readonly class Middleware implements MiddlewareInterface
 	/**
 	 * @param Dispatched $dispatched
 	 *
-	 * @return ResponseInterface
+	 * @return mixed
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 */
-	private function handleFound(Dispatched $dispatched): ResponseInterface
+	private function handleFound(Dispatched $dispatched): mixed
 	{
 		$routeData = $dispatched->handler;
 
@@ -98,15 +104,32 @@ final readonly class Middleware implements MiddlewareInterface
 		$methodDefinition = new MethodDefinition($routeData->getController(), $action, $dispatched->parameters);
 		$arguments = $this->methodResolver->resolve($methodDefinition);
 
-		$response = $controller->{$action}($arguments);
+		var_dump(
+			$controller,
+			$action,
+		);
 
-		if ($response instanceof ResponseInterface) {
-			return $response;
+		return $controller->{$action}(...$arguments);
+	}
+
+	private function transferToResponse(mixed $response): ResponseInterface
+	{
+		if (is_string($response)) {
+			return $this->response
+				->withHeader('content-type', 'text/plain')
+				->withBody(new SwooleStream($response));
 		}
 
-		return match (true) {
-			is_array($response) => $this->response->withBody(new JsonStream($response)),
-			default             => $this->response->withBody(new StandardStream($response)),
-		};
+		if (is_array($response)) {
+			return $this->response
+				->withHeader('content-type', 'application/json')
+				->withBody(new SwooleStream(json_encode($response)));
+		}
+
+		if ($this->response->hasHeader('content-type')) {
+			return $this->response->withBody(new SwooleStream((string)$response));
+		}
+
+		return $this->response->withHeader('content-type', 'text/plain')->withBody(new SwooleStream((string)$response));
 	}
 }
