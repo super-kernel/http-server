@@ -3,33 +3,23 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer;
 
+use FastRoute\Dispatcher;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use SuperKernel\HttpServer\Context\ResponseContext;
-use SuperKernel\HttpServer\Contract\ExceptionDispatcherFactoryInterface;
 use SuperKernel\HttpServer\Router\Dispatched;
-use SuperKernel\HttpServer\Router\MiddlewareCollector;
-use SuperKernel\HttpServer\Router\RouteDispatcher;
 use Throwable;
 
 final readonly class RequestHandler implements RequestHandlerInterface
 {
-	private string $serverName;
-
-	private ExceptionDispatcher $exceptionDispatcher;
-
 	public function __construct(
-		private RouteDispatcher             $routeDispatcher,
-		private MiddlewareInterface         $middleware,
-		private MiddlewareCollector         $middlewareCollector,
-		ExceptionDispatcherFactoryInterface $exceptionDispatcherFactory,
+		private MiddlewareInterface $middleware,
+		private Dispatcher          $routeDispatcher,
+		private ExceptionDispatcher $exceptionDispatcher,
 	)
 	{
-		$this->serverName = $this->routeDispatcher->serverName;
-
-		$this->exceptionDispatcher = $exceptionDispatcherFactory->getDispatcher($this->serverName);
 	}
 
 	public function handle(ServerRequestInterface $request): ResponseInterface
@@ -38,14 +28,12 @@ final readonly class RequestHandler implements RequestHandlerInterface
 			$dispatched = $request->getAttribute(Dispatched::class);
 
 			if (null === $dispatched) {
-				$middlewares = $this->middlewareCollector->getMiddlewares($this->serverName);
-
 				$routes = $this->routeDispatcher->dispatch(
 					$request->getMethod(),
 					$request->getUri()->getPath(),
 				);
 
-				$dispatched = new Dispatched($routes, $middlewares);
+				$dispatched = new Dispatched($routes);
 
 				$request = $request->withAttribute(Dispatched::class, $dispatched);
 			}

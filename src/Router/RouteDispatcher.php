@@ -4,11 +4,12 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer\Router;
 
 use FastRoute\Dispatcher\GroupCountBased;
+use FastRoute\RouteCollector;
 
 final class RouteDispatcher extends GroupCountBased
 {
-	public function __construct($data, public string $serverName)
+	public function __construct(RouteCollector $routeCollector)
 	{
-		parent::__construct($data);
+		parent::__construct($routeCollector->getData());
 	}
 }

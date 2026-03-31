@@ -8,48 +8,35 @@ use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use RuntimeException;
 use SplPriorityQueue;
-use SuperKernel\Di\Attribute\Factory;
-use SuperKernel\Di\Attribute\Provider;
-use SuperKernel\Di\Contract\AttributeCollectorInterface;
+use SuperKernel\Attribute\Provider;
+use SuperKernel\Contract\AnnotationCollectorInterface;
 use SuperKernel\HttpServer\Attribute\ExceptionHandler;
 use SuperKernel\HttpServer\Contract\ExceptionDispatcherFactoryInterface;
 use SuperKernel\HttpServer\Contract\ExceptionHandlerInterface;
 use SuperKernel\HttpServer\ExceptionDispatcher;
 
-#[
-	Provider(ExceptionDispatcherFactoryInterface::class),
-	Factory,
-]
-final class ExceptionDispatcherFactory implements ExceptionDispatcherFactoryInterface
+#[Provider(ExceptionDispatcherFactoryInterface::class)]
+final readonly class ExceptionDispatcherFactory implements ExceptionDispatcherFactoryInterface
 {
 	/**
 	 * @var array<string, SplPriorityQueue> $exceptions
 	 */
-	private array $exceptions = [];
-
-	public function getDispatcher(string $serverName): ExceptionDispatcher
-	{
-		return new ExceptionDispatcher($this->exceptions[$serverName] ?? new SplPriorityQueue);
-	}
+	private array $exceptions;
 
 	/**
-	 * @param ContainerInterface          $container
-	 * @param AttributeCollectorInterface $attributeCollector
+	 * @param ContainerInterface           $container
+	 * @param AnnotationCollectorInterface $annotationCollector
 	 *
-	 * @return ExceptionDispatcherFactory
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 */
-	public function __invoke(
-		ContainerInterface          $container,
-		AttributeCollectorInterface $attributeCollector,
-	): ExceptionDispatcherFactory
+	public function __construct(ContainerInterface $container, AnnotationCollectorInterface $annotationCollector)
 	{
-		foreach ($attributeCollector->getAttributes(ExceptionHandler::class) as $attribute) {
-			$class = $attribute->class;
+		foreach ($annotationCollector->getClassesByAttribute(ExceptionHandler::class) as $annotation) {
+			$class = $annotation->getClass();
 
 			/* @var ExceptionHandler $attributeInstance */
-			$attributeInstance = $attribute->attribute;
+			$attributeInstance = $annotation->getInstance();
 
 			$serverName = $attributeInstance->server;
 
@@ -66,5 +53,10 @@ final class ExceptionDispatcherFactory implements ExceptionDispatcherFactoryInte
 		}
 
 		return $this;
+	}
+
+	public function getDispatcher(string $serverName): ExceptionDispatcher
+	{
+		return new ExceptionDispatcher($this->exceptions[$serverName] ?? new SplPriorityQueue);
 	}
 }

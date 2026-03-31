@@ -5,7 +5,7 @@ namespace SuperKernelTest\HttpServer\Controller;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use SuperKernel\Di\Attribute\Autowired;
+use SuperKernel\Attribute\Autowired;
 use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\Middlewares;
 use SuperKernel\HttpServer\Attribute\RequestMapping;

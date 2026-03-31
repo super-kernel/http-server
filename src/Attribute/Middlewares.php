@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer\Attribute;
 
 use Attribute;
+use function is_int;
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
 final class Middlewares

@@ -16,7 +16,7 @@ final class Dispatched
 
 	public SplPriorityQueue $middleware;
 
-	public function __construct(array $routes, array $middlewares)
+	public function __construct(array $routes)
 	{
 		switch ($this->status = $routes[0]) {
 			case Dispatcher::NOT_FOUND:
@@ -25,16 +25,10 @@ final class Dispatched
 				$this->parameters = $routes[1];
 				break;
 			case Dispatcher::FOUND:
-				$this->handler    = $routes[1];
+				$this->handler = $routes[1];
 				$this->parameters = $routes[2];
-				$middlewares      = $middlewares + $this->handler->middlewares;
+				$this->middleware = $this->handler->getMiddlewares();
 				break;
-		}
-
-		$this->middleware = new SplPriorityQueue();
-
-		foreach ($middlewares as [$middleware, $priority]) {
-			$this->middleware->insert($middleware, $priority);
 		}
 	}
 }

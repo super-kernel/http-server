@@ -14,6 +14,7 @@ final class ExceptionDispatcher
 {
 	private SplPriorityQueue $exceptionHandler {
 		get => clone $this->exceptionHandler;
+		set => $this->exceptionHandler = $value;
 	}
 
 	public function __construct(SplPriorityQueue $exceptionHandler)

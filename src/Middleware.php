@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace SuperKernel\HttpServer;
 
+use Exception;
 use FastRoute\Dispatcher;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
@@ -11,26 +12,26 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use SuperKernel\Di\Attribute\Provider;
-use SuperKernel\Di\Contract\ResolverFactoryInterface;
-use SuperKernel\Di\Definition\ParameterDefinition;
-use SuperKernel\Di\Exception\Exception;
+use RuntimeException;
+use SuperKernel\Attribute\Provider;
+use SuperKernel\Di\Definition\MethodDefinition;
+use SuperKernel\Di\Resolver\MethodResolver;
 use SuperKernel\HttpServer\Exception\MethodNotAllowedHttpException;
 use SuperKernel\HttpServer\Exception\NotFoundHttpException;
 use SuperKernel\HttpServer\Router\Dispatched;
 use SuperKernel\Stream\JsonStream;
 use SuperKernel\Stream\StandardStream;
+use function implode;
 use function is_array;
+use function sprintf;
 
-#[
-	Provider(MiddlewareInterface::class),
-]
+#[Provider(MiddlewareInterface::class)]
 final readonly class Middleware implements MiddlewareInterface
 {
 	public function __construct(
-		private ContainerInterface       $container,
-		private ResponseInterface        $response,
-		private ResolverFactoryInterface $resolverDispatcher,
+		private ContainerInterface $container,
+		private ResponseInterface  $response,
+		private MethodResolver     $methodResolver,
 	)
 	{
 	}
@@ -59,7 +60,8 @@ final readonly class Middleware implements MiddlewareInterface
 		}
 
 		if (!$dispatched instanceof Dispatched) {
-			throw new Exception(sprintf('The dispatched object is not a %s object.', Dispatched::class));
+			throw new RuntimeException(
+				sprintf('The dispatched object is not a %s object.', Dispatched::class));
 		}
 
 		return match ($dispatched->status) {
@@ -80,9 +82,6 @@ final readonly class Middleware implements MiddlewareInterface
 	}
 
 	/**
-	 * @waring Route discovery is handled by the parameter resolver in `super-kernel/di`. If another DI container is
-	 *         used, remap the provider of `SuperKernel\HttpServer\Contract\MiddlewareDispatcherInterface`.
-	 *
 	 * @param Dispatched $dispatched
 	 *
 	 * @return ResponseInterface
@@ -91,13 +90,15 @@ final readonly class Middleware implements MiddlewareInterface
 	 */
 	private function handleFound(Dispatched $dispatched): ResponseInterface
 	{
-		$routeData           = $dispatched->handler;
-		$parameterDefinition = new ParameterDefinition($routeData->controller, $routeData->action, $dispatched->parameters);
-		$arguments           = $this->resolverDispatcher->getResolver($parameterDefinition)->resolve($parameterDefinition);
+		$routeData = $dispatched->handler;
 
-		$controller = $this->container->get($routeData->controller);
+		$controller = $this->container->get($routeData->getController());
+		$action = $routeData->getAction();
 
-		$response = $controller->{$routeData->action}($arguments);
+		$methodDefinition = new MethodDefinition($routeData->getController(), $action, $dispatched->parameters);
+		$arguments = $this->methodResolver->resolve($methodDefinition);
+
+		$response = $controller->{$action}($arguments);
 
 		if ($response instanceof ResponseInterface) {
 			return $response;
