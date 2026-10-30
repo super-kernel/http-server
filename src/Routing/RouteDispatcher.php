@@ -29,7 +29,8 @@ final readonly class RouteDispatcher
     /**
      * @throws NotFoundExceptionInterface      When the controller or an action dependency is not registered
      * @throws ContainerExceptionInterface     When the controller or an action dependency cannot be resolved
-     * @throws InvalidHttpDeclarationException When dispatch validation, action reflection or argument binding fails
+     * @throws InvalidHttpDeclarationException When dispatch validation, the controller type check, action reflection,
+     *                                         or argument binding fails
      */
     public function handle(ServerRequestInterface $request): mixed
     {
@@ -53,17 +54,6 @@ final readonly class RouteDispatcher
 
         RequestContext::set($request);
 
-        $controller = $this->controller($route);
-        $arguments = $this->argumentResolver->resolve($route, $request, $dispatched->variables);
-        return $controller->{$route->action}(...$arguments);
-    }
-
-    /**
-     * @throws ContainerExceptionInterface     When the controller cannot be resolved
-     * @throws InvalidHttpDeclarationException When the container entry is incompatible with the declared controller
-     */
-    private function controller(RouteDefinition $route): object
-    {
         $className = $route->controller;
         $controller = $this->container->get($className);
 
@@ -75,6 +65,7 @@ final readonly class RouteDispatcher
             ));
         }
 
-        return $controller;
+        $arguments = $this->argumentResolver->resolve($route, $request, $dispatched->variables);
+        return $controller->{$route->action}(...$arguments);
     }
 }

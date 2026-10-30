@@ -24,13 +24,14 @@ header are left untouched.
 
 Paths below are relative to `src/` and the package namespace.
 
-| Directory | Responsibility |
-| --- | --- |
-| `Middleware` | `MiddlewareCursor`: immutable per-request position in a compiled middleware plan. |
-| `Dispatcher` | `HttpExceptionDispatcher`: protocol-specific response recovery. |
-| `Factory` | `HttpExceptionDispatcherFactory`: builds a dispatcher for one configured listener. |
-| `Registry / Routing` | Immutable middleware/route registries and controller dispatch. |
-| `Request / Response / Callbacks` | Native request adaptation, response conversion/emission, and the HTTP callback. |
+| Directory                        | Responsibility                                                                                                                      |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `Middleware`                     | `MiddlewareCursor`: immutable per-request position in a compiled middleware plan, plus declared middleware resolution.              |
+| `Dispatcher`                     | `HttpExceptionDispatcher`: protocol-specific response recovery, its handler chain, fallbacks, and the routing `404`/`405` terminal. |
+| `Factory`                        | `HttpExceptionDispatcherFactory`: builds a dispatcher for one configured listener.                                                  |
+| `Registry / Routing`             | Immutable middleware/route registries and controller dispatch.                                                                      |
+| `Request / Response / Callbacks` | Native request adaptation, response conversion/emission, and the HTTP callback.                                                     |
+| `Constants`                      | `HttpMethod`: route declaration methods; `RequestAttributeName`: request attribute names owned by the pipeline.                     |
 
 Implementation helpers retain an `@internal` boundary; a responsibility namespace does not make them extension points.
 
@@ -38,9 +39,9 @@ Implementation helpers retain an `@internal` boundary; a responsibility namespac
 
 Use the following component declarations:
 
-- `Middleware\MiddlewareCursor`
 - `Dispatcher\HttpExceptionDispatcher`
 - `Factory\HttpExceptionDispatcherFactory`
+- `Constants\HttpMethod`
 
 ## Request and response contexts
 
@@ -50,9 +51,9 @@ The adapter recursively snapshots native request arrays as scalar, null, and nes
 through a read-only PSR stream, and rejects objects or resources, including embedded native Swoole HTTP handles. The
 callback installs only the resulting PSR messages into HTTP Message's `RequestContext` and `ResponseContext`; neither
 message retains or exposes its native Swoole counterpart. The request carries the original listener configuration
-array under the `super-kernel.server.listener` attribute, allowing the default pipeline to select routes and middleware
-by its `name` field. The handler requires an array with a non-empty string `name` at this PSR boundary; Server's
-configuration provider owns validation of all listener fields.
+array under the `super-kernel.server.listener` attribute, named by `Constants\RequestAttributeName::Listener`, allowing
+the default pipeline to select routes and middleware by its `name` field. The handler requires an array with a
+non-empty string `name` at this PSR boundary; Server's configuration provider owns validation of all listener fields.
 
 The context classes are typed holders rather than HTTP messages. They store their values through
 `SuperKernel\Context\Context` under the matching PSR-7 interface keys: `ServerRequestInterface::class` for requests and
@@ -148,15 +149,16 @@ enable it. Requests delegated to the existing Upgrade bypass do not enter this a
 ## Controllers and routes
 
 Mark a controller with `#[Controller]` and each public action with one or more `#[RequestMapping]` attributes. HTTP
-methods use the constants declared by `RequestMapping`, so unsupported method declarations fail at PHP attribute
-construction instead of being accepted as arbitrary strings. `Controller::$server` identifies the named HTTP server and
-must exactly match the case-sensitive `name()` of its Swoole listener. It defaults to `http`; the existing first
-positional argument remains the route prefix.
+methods are cases of the string-backed `Constants\HttpMethod` enum and default to `HttpMethod::Get`; a method string or
+any other value fails at PHP attribute construction instead of being accepted. `Controller::$server` identifies the
+named HTTP server and must exactly match the case-sensitive `name()` of its Swoole listener. It defaults to `http`; the
+existing first positional argument remains the route prefix.
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
 use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
+use SuperKernel\HttpServer\Constants\HttpMethod;
 
 #[Controller('/api')]
 final readonly class WidgetController
@@ -165,7 +167,7 @@ final readonly class WidgetController
     {
     }
 
-    #[RequestMapping('/widgets/{id:\d+}', RequestMapping::GET)]
+    #[RequestMapping('/widgets/{id:\d+}', HttpMethod::Get)]
     public function show(ServerRequestInterface $request, int $id): array
     {
         return [
@@ -364,8 +366,7 @@ keeps this decision independent of mutable request state on a shared handler ins
 dispatcher. Its constructor reads the exact `HttpExceptionHandler` registrations once, validates every local
 handler, and groups registrations by declaration `name` while preserving provider order. It does not retain the
 provider.
-`create(array $configuration)` preserves its existing fresh-dispatcher behavior. The additive
-`forListener(string $name): HttpExceptionDispatcher` API returns an immutable dispatcher prepared during factory
+Its `forListener(string $name): HttpExceptionDispatcher` API returns an immutable dispatcher prepared during factory
 construction for that exact name, or a shared empty-chain dispatcher when no handlers are registered. The native
 callback and routing fallback use this same API and retained factory, so requests neither reconstruct dispatchers
 nor rediscover, regroup, or sort handlers. Inject the factory into consumers; do not construct its service providers.
@@ -436,8 +437,11 @@ its reporting behavior.
 supplies a listener request attribute containing a non-empty string `name`:
 
 ```php
+use SuperKernel\HttpServer\Constants\RequestAttributeName;
+use SuperKernel\HttpServer\Provider\MiddlewareProvider;
+
 $middleware = new MiddlewareProvider($container, $responseConverter, $httpExceptionDispatcherFactory);
-$request = $request->withAttribute('super-kernel.server.listener', ['name' => 'http']);
+$request = $request->withAttribute(RequestAttributeName::Listener->value, ['name' => 'http']);
 ```
 
 Handlers without `exception:` match every throwable, including routing `404` and `405`. A stopping handler's response

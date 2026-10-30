@@ -10,6 +10,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
+use SuperKernel\HttpServer\Constants\HttpMethod;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 use SuperKernel\HttpServer\Registry\RouteRegistry;
 use SuperKernel\HttpServer\Tests\Fixture\ExampleController;
@@ -48,7 +49,7 @@ final class RouteRegistryTest extends TestCase
         ));
         $mapping = new AttributeMetadata(new RequestMapping(
             path   : '/widgets/{id:\\d+}',
-            method : RequestMapping::GET,
+            method : HttpMethod::Get,
         ));
         $collector = new TestAnnotationCollector(
             classesByAttribute: [
@@ -115,7 +116,7 @@ final class RouteRegistryTest extends TestCase
         ));
         $mapping = new AttributeMetadata(new RequestMapping(
             path   : '/widgets/{id:\\d+}',
-            method : RequestMapping::GET,
+            method : HttpMethod::Get,
         ));
 
         return new TestAnnotationCollector(

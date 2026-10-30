@@ -22,6 +22,7 @@ use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\HttpExceptionHandler;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Callbacks\OnRequestCallback;
+use SuperKernel\HttpServer\Constants\HttpMethod;
 use SuperKernel\HttpServer\Contract\HttpExceptionHandlerInterface;
 use SuperKernel\HttpServer\Contract\StoppableHttpExceptionHandlerInterface;
 use SuperKernel\HttpServer\Exception\HttpException;
@@ -189,9 +190,9 @@ final class RoutingFailureTest extends TestCase
             ],
         ], methodAttributes: [
             ExampleController::class . '::withoutResult' => [
-                new AttributeMetadata(new RequestMapping('/resource', RequestMapping::POST)),
-                new AttributeMetadata(new RequestMapping('/resource', RequestMapping::GET)),
-                new AttributeMetadata(new RequestMapping('/resource', RequestMapping::HEAD)),
+                new AttributeMetadata(new RequestMapping('/resource', HttpMethod::Post)),
+                new AttributeMetadata(new RequestMapping('/resource', HttpMethod::Get)),
+                new AttributeMetadata(new RequestMapping('/resource', HttpMethod::Head)),
             ],
         ]);
         $provider = new ExceptionHandlerProvider($collector, new TestContainer($handlers));

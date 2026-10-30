@@ -28,7 +28,7 @@ use SuperKernel\HttpServer\Tests\Fixture\NullStdoutLogger;
 use SuperKernel\HttpServer\Tests\Fixture\TestAnnotationCollector;
 use SuperKernel\HttpServer\Tests\Fixture\TestContainer;
 use SuperKernel\Server\Config\SwooleServerConfigInterface;
-use SuperKernel\Server\Enum\Protocol;
+use SuperKernel\Server\Constants\Protocol;
 use SuperKernel\Server\Event\AfterServerCreated;
 use Swoole\Constant;
 use Swoole\Coroutine\Server as CoroutineServer;

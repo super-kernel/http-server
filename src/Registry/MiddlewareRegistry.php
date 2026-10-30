@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer\Registry;
 
 use Psr\Http\Server\MiddlewareInterface;
-use SplPriorityQueue;
 use SuperKernel\HttpServer\Routing\RouteDefinition;
 
 use function array_map;
-use function count;
 
 final readonly class MiddlewareRegistry
 {
@@ -37,10 +35,10 @@ final readonly class MiddlewareRegistry
         $routePlans = [];
 
         foreach ($serverMiddlewares as $serverName => $middlewares) {
-            $serverPlans[$serverName] = self::ordered($globalMiddlewares, $middlewares);
+            $serverPlans[$serverName] = MiddlewarePlanCompiler::compile($globalMiddlewares, $middlewares);
 
             foreach ($routeMiddlewares as $controller => $route) {
-                $routePlans[$serverName][$controller] = self::ordered(
+                $routePlans[$serverName][$controller] = MiddlewarePlanCompiler::compile(
                     $globalMiddlewares,
                     $middlewares,
                     $route,
@@ -49,7 +47,7 @@ final readonly class MiddlewareRegistry
         }
 
         $defaultRoutePlans = array_map(function ($middlewares) use ($globalMiddlewares) {
-            return self::ordered($globalMiddlewares, $middlewares);
+            return MiddlewarePlanCompiler::compile($globalMiddlewares, $middlewares);
         }, $routeMiddlewares);
 
         $this->serverPlans = $serverPlans;
@@ -103,38 +101,5 @@ final readonly class MiddlewareRegistry
         }
 
         return $this->defaultRoutePlans[$route->controller] ?? $this->globalMiddlewares;
-    }
-
-    /**
-     * @param list<MiddlewareInterface> ...$layers
-     *
-     * @return list<MiddlewareInterface>
-     */
-    private static function ordered(array ...$layers): array
-    {
-        /** @var SplPriorityQueue<MiddlewareInterface, array{int, int}> $queue */
-        $queue = new SplPriorityQueue();
-        $queue->setExtractFlags(SplPriorityQueue::EXTR_DATA);
-        $priority = count($layers);
-        $position = 0;
-
-        foreach ($layers as $middlewares) {
-            foreach ($middlewares as $middleware) {
-                $queue->insert($middleware, [
-                    $priority,
-                    -$position++,
-                ]);
-            }
-
-            --$priority;
-        }
-
-        $ordered = [];
-
-        while (!$queue->isEmpty()) {
-            $ordered[] = $queue->extract();
-        }
-
-        return $ordered;
     }
 }

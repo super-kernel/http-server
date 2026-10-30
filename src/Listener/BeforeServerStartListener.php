@@ -8,7 +8,7 @@ use SuperKernel\Attribute\Listener;
 use SuperKernel\Contract\ListenerInterface;
 use SuperKernel\HttpServer\Callbacks\OnRequestCallback;
 use SuperKernel\HttpServer\Exception\RequestCallbackRegistrationException;
-use SuperKernel\Server\Enum\Protocol;
+use SuperKernel\Server\Constants\Protocol;
 use SuperKernel\Server\Event\AfterServerCreated;
 use Swoole\Constant;
 use Swoole\Server;
