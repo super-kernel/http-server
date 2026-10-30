@@ -21,6 +21,7 @@ use SuperKernel\HttpServer\Attribute\Middleware;
 use SuperKernel\HttpServer\Attribute\Middlewares;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Callbacks\OnRequestCallback;
+use SuperKernel\HttpServer\Constants\HttpMethod;
 use SuperKernel\HttpServer\Factory\HttpExceptionDispatcherFactory;
 use SuperKernel\HttpServer\Provider\MiddlewareProvider;
 use SuperKernel\HttpServer\Provider\MiddlewareRegistryProvider;
@@ -342,19 +343,19 @@ final class HttpRequestPipelineTest extends TestCase
         ));
         $showRoute = new AttributeMetadata(new RequestMapping(
             path   : '/widgets/{id:\\d+}',
-            method : RequestMapping::GET,
+            method : HttpMethod::Get,
         ));
         $failRoute = new AttributeMetadata(new RequestMapping(
             path   : '/fail',
-            method : RequestMapping::GET,
+            method : HttpMethod::Get,
         ));
         $conversionRoute = new AttributeMetadata(new RequestMapping(
             path   : '/convert/{name}/{ratio}/{enabled}/{state}',
-            method : RequestMapping::GET,
+            method : HttpMethod::Get,
         ));
         $voidRoute = new AttributeMetadata(new RequestMapping(
             path   : '/void',
-            method : RequestMapping::GET,
+            method : HttpMethod::Get,
         ));
         $classesByAttribute = [
             Controller::class => [

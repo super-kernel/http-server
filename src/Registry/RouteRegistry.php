@@ -9,7 +9,6 @@ use FastRoute\RouteCollector;
 use ReflectionClass;
 use ReflectionMethod;
 use SuperKernel\Contract\AnnotationCollectorInterface;
-use SuperKernel\Contract\AttributeMetadataInterface;
 use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
@@ -44,7 +43,23 @@ final readonly class RouteRegistry
 
         foreach ($collector->getClassesWithAttribute(Controller::class) as $className => [$metadata]) {
             $controller = $metadata->attribute();
-            $reflection = self::controllerReflection($className);
+
+            try {
+                $reflection = new ReflectionClass($className);
+            } catch (Throwable $throwable) {
+                throw new InvalidHttpDeclarationException(sprintf(
+                    'Unable to reflect HTTP controller %s.',
+                    $className,
+                ), 0, $throwable);
+            }
+
+            if (!$reflection->isInstantiable()) {
+                throw new InvalidHttpDeclarationException(sprintf(
+                    'HTTP controller %s must be instantiable.',
+                    $className,
+                ));
+            }
+
             $routes = [];
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -53,12 +68,20 @@ final readonly class RouteRegistry
                 }
 
                 $methodAttributes = $collector->getMethodAttributes($className, $method->getName());
-                $mappings = self::requestMappings($methodAttributes);
+                $mappings = [];
+
+                foreach ($methodAttributes as $attribute) {
+                    if (RequestMapping::class === $attribute->name()) {
+                        /** @var RequestMapping $instance */
+                        $instance = $attribute->attribute();
+                        $mappings[] = $instance;
+                    }
+                }
 
                 foreach ($mappings as $mapping) {
                     $routes[] = [
-                        'method'  => $mapping->method,
-                        'path'    => self::routePath($mapping->path),
+                        'method'  => $mapping->method->value,
+                        'path'    => '/' . ltrim($mapping->path, '/'),
                         'handler' => new RouteDefinition(
                             $className,
                             $method->getName(),
@@ -69,7 +92,7 @@ final readonly class RouteRegistry
 
             if ([] !== $routes) {
                 $routeGroups[$controller->server][] = [
-                    'prefix' => self::groupPrefix($controller->prefix),
+                    'prefix' => rtrim('/' . ltrim($controller->prefix, '/'), '/'),
                     'routes' => $routes,
                 ];
             }
@@ -145,62 +168,5 @@ final readonly class RouteRegistry
             $route,
             $result[2],
         );
-    }
-
-    /**
-     * @param list<AttributeMetadataInterface<object>> $attributes
-     *
-     * @return list<RequestMapping>
-     */
-    private static function requestMappings(array $attributes): array
-    {
-        $instances = [];
-
-        foreach ($attributes as $attribute) {
-            if (RequestMapping::class === $attribute->name()) {
-                /** @var RequestMapping $instance */
-                $instance = $attribute->attribute();
-                $instances[] = $instance;
-            }
-        }
-
-        return $instances;
-    }
-
-    /**
-     * @param class-string $className
-     *
-     * @return ReflectionClass<object>
-     */
-    private static function controllerReflection(string $className): ReflectionClass
-    {
-        try {
-            $reflection = new ReflectionClass($className);
-        } catch (Throwable $throwable) {
-            throw new InvalidHttpDeclarationException(sprintf(
-                'Unable to reflect HTTP controller %s.',
-                $className,
-            ), 0, $throwable);
-        }
-
-        if (!$reflection->isInstantiable()) {
-            throw new InvalidHttpDeclarationException(sprintf(
-                'HTTP controller %s must be instantiable.',
-                $className,
-            ));
-        }
-
-        return $reflection;
-    }
-
-    private static function groupPrefix(string $prefix): string
-    {
-        return rtrim('/' . ltrim($prefix, '/'), '/');
-    }
-
-    /** @return non-empty-string */
-    private static function routePath(string $path): string
-    {
-        return '/' . ltrim($path, '/');
     }
 }

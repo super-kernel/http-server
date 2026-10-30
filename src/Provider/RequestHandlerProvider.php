@@ -11,6 +11,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpMessage\Context\RequestContext;
+use SuperKernel\HttpServer\Constants\RequestAttributeName;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 use SuperKernel\HttpServer\Middleware\MiddlewareCursor;
 use SuperKernel\HttpServer\Registry\MiddlewareRegistry;
@@ -38,7 +39,7 @@ final readonly class RequestHandlerProvider implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $configuration = $request->getAttribute('super-kernel.server.listener');
+        $configuration = $request->getAttribute(RequestAttributeName::Listener->value);
 
         if (!is_array($configuration)
             || !is_string($configuration['name'] ?? null)
@@ -47,7 +48,7 @@ final readonly class RequestHandlerProvider implements RequestHandlerInterface
             throw new InvalidHttpDeclarationException(sprintf(
                 '%s requires the %s request attribute to be an array with a non-empty string name; %s provided.',
                 self::class,
-                'super-kernel.server.listener',
+                RequestAttributeName::Listener->value,
                 get_debug_type($configuration),
             ));
         }

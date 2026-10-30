@@ -52,7 +52,6 @@ final class MiddlewareProviderTest extends TestCase
         self::assertTrue($reflection->isFinal());
         self::assertTrue($reflection->isReadOnly());
         self::assertTrue($reflection->implementsInterface(MiddlewareInterface::class));
-        self::assertSame('mixed', (string) $reflection->getMethod('handleFound')->getReturnType());
         self::assertCount(1, $attributes);
         self::assertSame(MiddlewareInterface::class, $attributes[0]->newInstance()->className);
         self::assertSame([
@@ -78,7 +77,7 @@ final class MiddlewareProviderTest extends TestCase
         ));
 
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessageIsOrContains('MiddlewareProvider::dispatcher()');
+        $this->expectExceptionMessageIsOrContains('RouteDispatcherLookup::resolve()');
 
         $middleware->process($request, $this->createStub(RequestHandlerInterface::class));
     }

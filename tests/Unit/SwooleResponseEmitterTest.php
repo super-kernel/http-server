@@ -435,11 +435,14 @@ final class SwooleResponseEmitterTest extends TestCase
     }
 
     /**
-     * A forward-only body of unknown size that serves one chunk per read, like an event stream.
+     * A forward-only body of unknown size that serves one chunk per read, like an event stream. Callers pass the chunks
+     * that their assertions expect, so each scenario keeps its data beside its expectations.
      *
      * @param list<string> $chunks
      *
      * @return Stub&StreamInterface
+     *
+     * @noinspection PhpSameParameterValueInspection
      */
     private function unsizedBody(array $chunks): StreamInterface
     {
@@ -460,6 +463,11 @@ final class SwooleResponseEmitterTest extends TestCase
         return $body;
     }
 
+    /**
+     * Callers pass the contents that their assertions expect, so each scenario keeps its data beside its expectations.
+     *
+     * @noinspection PhpSameParameterValueInspection
+     */
     private function temporaryFile(string $contents): string
     {
         $file = tempnam(sys_get_temp_dir(), 'super-kernel-http-server-');

@@ -16,42 +16,40 @@ use SuperKernel\HttpServer\Attribute\HttpExceptionHandler;
 use SuperKernel\HttpServer\Attribute\Middleware;
 use SuperKernel\HttpServer\Attribute\Middlewares;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
+use SuperKernel\HttpServer\Constants\HttpMethod;
 use Throwable;
+use TypeError;
 
 final class HttpAttributeContractTest extends TestCase
 {
     public function testRequestMappingDeclaresAllStandardHttpMethods(): void
     {
+        $methods = [];
+
+        foreach (HttpMethod::cases() as $method) {
+            $methods[$method->name] = $method->value;
+        }
+
         self::assertSame([
-            'GET',
-            'HEAD',
-            'POST',
-            'PUT',
-            'PATCH',
-            'DELETE',
-            'CONNECT',
-            'OPTIONS',
-            'TRACE',
-        ], [
-            RequestMapping::GET,
-            RequestMapping::HEAD,
-            RequestMapping::POST,
-            RequestMapping::PUT,
-            RequestMapping::PATCH,
-            RequestMapping::DELETE,
-            RequestMapping::CONNECT,
-            RequestMapping::OPTIONS,
-            RequestMapping::TRACE,
-        ]);
+            'Get'     => 'GET',
+            'Head'    => 'HEAD',
+            'Post'    => 'POST',
+            'Put'     => 'PUT',
+            'Patch'   => 'PATCH',
+            'Delete'  => 'DELETE',
+            'Connect' => 'CONNECT',
+            'Options' => 'OPTIONS',
+            'Trace'   => 'TRACE',
+        ], $methods);
     }
 
     public function testRequestMappingUsesDeclaredHttpMethodConstants(): void
     {
-        $mapping = new RequestMapping('/widgets', RequestMapping::POST);
+        $mapping = new RequestMapping('/widgets', HttpMethod::Post);
 
         self::assertSame('/widgets', $mapping->path);
-        self::assertSame(RequestMapping::POST, $mapping->method);
-        self::assertSame(RequestMapping::GET, new RequestMapping('/widgets')->method);
+        self::assertSame(HttpMethod::Post, $mapping->method);
+        self::assertSame(HttpMethod::Get, new RequestMapping('/widgets')->method);
         self::assertSame('', new Controller()->prefix);
         self::assertSame('http', new Controller()->server);
         self::assertSame('admin', new Controller(server: 'admin')->server);
@@ -64,10 +62,17 @@ final class HttpAttributeContractTest extends TestCase
         ])->middlewares);
     }
 
+    /**
+     * The string argument deliberately fails the native HttpMethod parameter type; the construction runs only to throw.
+     *
+     * @noinspection PhpParamsInspection, PhpExpressionResultUnusedInspection
+     */
     public function testRequestMappingRejectsAnUnsupportedHttpMethod(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessageIsOrContains('HTTP request method must be one of');
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessageIsOrContains(
+            'Argument #2 ($method) must be of type ' . HttpMethod::class . ', string given',
+        );
 
         new RequestMapping('/widgets', 'BREW');
     }

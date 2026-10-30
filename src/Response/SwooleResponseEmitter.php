@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SuperKernel\HttpServer\Response;
 
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 use SuperKernel\Contract\StdoutLoggerInterface;
 use Swoole\Http\Response;
 use Throwable;
@@ -34,13 +33,22 @@ final readonly class SwooleResponseEmitter
             $statusCode = $response->getStatusCode();
 
             if (!$swooleResponse->status($statusCode, $response->getReasonPhrase())) {
-                $this->logFailure(sprintf('Unable to emit HTTP status %d.', $statusCode));
+                EmissionFailureLog::write($this->logger, sprintf('Unable to emit HTTP status %d.', $statusCode));
 
                 return;
             }
 
             $body = $response->getBody();
-            $file = self::regularFile($body);
+            $file = null;
+
+            if ('plainfile' === $body->getMetadata('wrapper_type')) {
+                $uri = $body->getMetadata('uri');
+
+                if (is_string($uri) && '' !== $uri && is_file($uri) && is_readable($uri)) {
+                    $file = $uri;
+                }
+            }
+
             $complete = null === $file && $body->isSeekable() && null !== $body->getSize();
 
             foreach ($response->getHeaders() as $name => $values) {
@@ -50,7 +58,7 @@ final readonly class SwooleResponseEmitter
                 }
 
                 if (!$swooleResponse->header($name, $values, false)) {
-                    $this->logFailure(sprintf('Unable to emit HTTP header %s.', $name));
+                    EmissionFailureLog::write($this->logger, sprintf('Unable to emit HTTP header %s.', $name));
 
                     return;
                 }
@@ -60,7 +68,7 @@ final readonly class SwooleResponseEmitter
                 $body->rewind();
 
                 if (!$swooleResponse->end($body->getContents())) {
-                    $this->logFailure('Unable to finish the Swoole HTTP response.');
+                    EmissionFailureLog::write($this->logger, 'Unable to finish the Swoole HTTP response.');
                 }
 
                 return;
@@ -71,71 +79,36 @@ final readonly class SwooleResponseEmitter
                     return;
                 }
 
-                $this->logFailure(sprintf('Unable to send the HTTP response file %s.', $file));
+                EmissionFailureLog::write($this->logger, sprintf('Unable to send the HTTP response file %s.', $file));
 
                 if (!$swooleResponse->isWritable()) {
                     return;
                 }
             }
 
-            $this->writeChunks($body, $swooleResponse);
+            if ($body->isSeekable()) {
+                $body->rewind();
+            }
+
+            while (!$body->eof()) {
+                $chunk = $body->read(self::CHUNK_SIZE);
+
+                if ('' === $chunk) {
+                    break;
+                }
+
+                if (!$swooleResponse->write($chunk)) {
+                    EmissionFailureLog::write($this->logger, 'Unable to write the HTTP response body.');
+
+                    return;
+                }
+            }
+
+            if (!$swooleResponse->end()) {
+                EmissionFailureLog::write($this->logger, 'Unable to finish the Swoole HTTP response.');
+            }
         } catch (Throwable $throwable) {
-            $this->logFailure('HTTP response emission failed.', $throwable);
-        }
-    }
-
-    private function writeChunks(StreamInterface $body, Response $swooleResponse): void
-    {
-        if ($body->isSeekable()) {
-            $body->rewind();
-        }
-
-        while (!$body->eof()) {
-            $chunk = $body->read(self::CHUNK_SIZE);
-
-            if ('' === $chunk) {
-                break;
-            }
-
-            if (!$swooleResponse->write($chunk)) {
-                $this->logFailure('Unable to write the HTTP response body.');
-
-                return;
-            }
-        }
-
-        if (!$swooleResponse->end()) {
-            $this->logFailure('Unable to finish the Swoole HTTP response.');
-        }
-    }
-
-    /**
-     * @return non-empty-string|null The path of the readable regular file behind the body
-     */
-    private static function regularFile(StreamInterface $body): ?string
-    {
-        if ('plainfile' !== $body->getMetadata('wrapper_type')) {
-            return null;
-        }
-
-        $uri = $body->getMetadata('uri');
-
-        return is_string($uri) && '' !== $uri && is_file($uri) && is_readable($uri) ? $uri : null;
-    }
-
-    private function logFailure(string $message, ?Throwable $throwable = null): void
-    {
-        try {
-            if (null === $throwable) {
-                $this->logger->error($message);
-
-                return;
-            }
-
-            $this->logger->error($message, [
-                'exception' => $throwable,
-            ]);
-        } catch (Throwable) {
+            EmissionFailureLog::write($this->logger, 'HTTP response emission failed.', $throwable);
         }
     }
 }

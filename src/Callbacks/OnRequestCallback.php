@@ -8,6 +8,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use SuperKernel\HttpMessage\Context\RequestContext;
 use SuperKernel\HttpMessage\Context\ResponseContext;
 use SuperKernel\HttpMessage\Response as PsrResponse;
+use SuperKernel\HttpServer\Constants\RequestAttributeName;
 use SuperKernel\HttpServer\Dispatcher\HttpExceptionDispatcher;
 use SuperKernel\HttpServer\Factory\HttpExceptionDispatcherFactory;
 use SuperKernel\HttpServer\Request\SwooleRequestAdapter;
@@ -55,7 +56,7 @@ final readonly class OnRequestCallback
             try {
                 ResponseContext::set($initialResponse);
                 $requestContext = $this->requestAdapter->adapt($request)->withAttribute(
-                    'super-kernel.server.listener',
+                    RequestAttributeName::Listener->value,
                     $this->configuration,
                 );
 

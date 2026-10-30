@@ -9,10 +9,7 @@ use SuperKernel\Contract\ExceptionDispatcherInterface;
 use SuperKernel\ExceptionDispatcher\Attribute\ExceptionHandler;
 use SuperKernel\ExceptionDispatcher\Registry\ExceptionHandlerRegistration;
 use SuperKernel\HttpMessage\Response;
-use SuperKernel\HttpMessage\Stream\StringStream;
 use SuperKernel\HttpServer\Contract\HttpExceptionHandlerInterface;
-use SuperKernel\HttpServer\Contract\StoppableHttpExceptionHandlerInterface;
-use SuperKernel\HttpServer\Exception\HttpException;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 use Throwable;
 
@@ -69,30 +66,7 @@ final readonly class HttpExceptionDispatcher
         ResponseInterface $response,
     ): ResponseInterface
     {
-        $response = self::fallback($throwable, $response);
-
-        foreach ($this->handlers as $entry) {
-            if (!$entry['registration']->matches($throwable)) {
-                continue;
-            }
-
-            $handler = $entry['handler'];
-
-            try {
-                $response = $handler->handle($throwable, $response);
-
-                if (
-                    $handler instanceof StoppableHttpExceptionHandlerInterface
-                    && $handler->isPropagationStopped($throwable, $response)
-                ) {
-                    return $response;
-                }
-            } catch (Throwable $handlerFailure) {
-                $this->exceptionDispatcher->dispatch($handlerFailure);
-            }
-        }
-
-        throw $throwable;
+        return HttpExceptionHandlerChain::dispatch($this->handlers, $this->exceptionDispatcher, $throwable, $response);
     }
 
     /**
@@ -103,61 +77,30 @@ final readonly class HttpExceptionDispatcher
     public function recover(Throwable $throwable, ResponseInterface $response): ResponseInterface
     {
         try {
-            return $this->dispatch($throwable, $response);
-        } catch (Throwable $failure) {
-            $this->reportFailure($failure);
-        }
-
-        try {
-            return self::fallback($throwable, new Response());
-        } catch (Throwable $failure) {
-            $this->reportFailure($failure);
-
-            return self::text(new Response(), 'Internal Server Error', 500);
-        }
-    }
-
-    private function reportFailure(Throwable $throwable): void
-    {
-        try {
-            $this->exceptionDispatcher->dispatch($throwable);
-        } catch (Throwable) {
-            // Reporting must not turn a request failure into a worker failure.
-        }
-    }
-
-    private static function fallback(Throwable $throwable, ResponseInterface $response): ResponseInterface
-    {
-        if ($throwable instanceof HttpException) {
-            return self::text(
+            return HttpExceptionHandlerChain::dispatch(
+                $this->handlers,
+                $this->exceptionDispatcher,
+                $throwable,
                 $response,
-                $throwable->getMessage(),
-                $throwable->statusCode,
-                $throwable->headers,
             );
+        } catch (Throwable $failure) {
+            try {
+                $this->exceptionDispatcher->dispatch($failure);
+            } catch (Throwable) {
+                // Reporting must not turn a request failure into a worker failure.
+            }
         }
 
-        return self::text($response, 'Internal Server Error', 500);
-    }
+        try {
+            return HttpExceptionFallback::response($throwable, new Response());
+        } catch (Throwable $failure) {
+            try {
+                $this->exceptionDispatcher->dispatch($failure);
+            } catch (Throwable) {
+                // Reporting must not turn a request failure into a worker failure.
+            }
 
-    /**
-     * @param array<non-empty-string, string|string[]> $headers
-     */
-    private static function text(
-        ResponseInterface $response,
-        string            $body,
-        int               $status,
-        array             $headers = [],
-    ): ResponseInterface
-    {
-        $response = $response
-            ->withStatus($status)
-            ->withHeader('Content-Type', 'text/plain; charset=utf-8');
-
-        foreach ($headers as $name => $values) {
-            $response = $response->withHeader($name, $values);
+            return PlainTextContent::apply(new Response(), 'Internal Server Error', 500);
         }
-
-        return $response->withBody(new StringStream($body));
     }
 }

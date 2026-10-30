@@ -15,21 +15,18 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use SuperKernel\Attribute\Provider;
 use SuperKernel\HttpMessage\Context\RequestContext;
-use SuperKernel\HttpMessage\Context\ResponseContext;
-use SuperKernel\HttpMessage\Stream\StringStream;
+use SuperKernel\HttpServer\Dispatcher\RoutingFailureTerminal;
 use SuperKernel\HttpServer\Exception\HttpException;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 use SuperKernel\HttpServer\Factory\HttpExceptionDispatcherFactory;
 use SuperKernel\HttpServer\Middleware\MiddlewareCursor;
 use SuperKernel\HttpServer\Response\ResponseConverter;
 use SuperKernel\HttpServer\Routing\Dispatched;
-use SuperKernel\HttpServer\Routing\RouteDispatcher;
+use SuperKernel\HttpServer\Routing\RouteDispatcherLookup;
 use Throwable;
 
 use function get_debug_type;
 use function implode;
-use function is_array;
-use function is_string;
 use function sprintf;
 
 #[Provider(MiddlewareInterface::class)]
@@ -81,15 +78,23 @@ final readonly class MiddlewareProvider implements MiddlewareInterface
         }
 
         $result = match ($dispatched->status) {
-            Dispatcher::NOT_FOUND          => $this->handleRoutingFailure($request, HttpException::notFound()),
-            Dispatcher::METHOD_NOT_ALLOWED => $this->handleRoutingFailure($request, new HttpException(
-                405,
-                'Method Not Allowed',
-                [
-                    'Allow' => implode(', ', $dispatched->allowedMethods),
-                ],
-            )),
-            Dispatcher::FOUND => $this->handleFound($request),
+            Dispatcher::NOT_FOUND => RoutingFailureTerminal::respond(
+                $this->httpExceptionDispatcherFactory,
+                $request,
+                HttpException::notFound(),
+            ),
+            Dispatcher::METHOD_NOT_ALLOWED => RoutingFailureTerminal::respond(
+                $this->httpExceptionDispatcherFactory,
+                $request,
+                new HttpException(
+                    405,
+                    'Method Not Allowed',
+                    [
+                        'Allow' => implode(', ', $dispatched->allowedMethods),
+                    ],
+                ),
+            ),
+            Dispatcher::FOUND => RouteDispatcherLookup::resolve($this->container)->handle($request),
             default           => throw new InvalidHttpDeclarationException(
                 'Unsupported HTTP dispatch status.',
             ),
@@ -101,66 +106,4 @@ final readonly class MiddlewareProvider implements MiddlewareInterface
 
         return $this->responseConverter->convert($result);
     }
-
-    /** @throws Throwable When listener selection or reporting an HTTP handler failure throws */
-    private function handleRoutingFailure(ServerRequestInterface $request, HttpException $exception): ResponseInterface
-    {
-        $response = ResponseContext::get();
-        $fallback = self::text($exception->getMessage(), $exception->statusCode, $exception->headers);
-
-        $configuration = $request->getAttribute('super-kernel.server.listener');
-
-        if (!is_array($configuration)
-            || !is_string($configuration['name'] ?? null)
-            || '' === $configuration['name']
-        ) {
-            throw new InvalidHttpDeclarationException('Routing failure dispatch requires a listener name.');
-        }
-
-        try {
-            return $this->httpExceptionDispatcherFactory->forListener($configuration['name'])->dispatch(
-                $exception,
-                $response,
-            );
-        } catch (HttpException $unhandled) {
-            if ($unhandled !== $exception) {
-                throw $unhandled;
-            }
-        }
-
-        return $fallback;
-    }
-
-    /**
-     * @throws NotFoundExceptionInterface  When the route dispatcher or controller is not registered
-     * @throws ContainerExceptionInterface When the route dispatcher or controller cannot be resolved
-     */
-    private function handleFound(ServerRequestInterface $request): mixed
-    {
-        return $this->dispatcher()->handle($request);
-    }
-
-    /**
-     * @param array<non-empty-string, string|string[]> $headers
-     */
-    private static function text(string $body, int $status, array $headers = []): ResponseInterface
-    {
-        $response = ResponseContext::get()
-            ->withStatus($status)
-            ->withHeader('Content-Type', 'text/plain; charset=utf-8')
-            ->withBody(new StringStream($body));
-
-        foreach ($headers as $name => $value) {
-            $response = $response->withHeader($name, $value);
-        }
-
-        return $response;
-    }
-
-    /** @throws ContainerExceptionInterface When the route dispatcher cannot be resolved */
-    private function dispatcher(): RouteDispatcher
-    {
-        return $this->container->get(RouteDispatcher::class);
-    }
-
 }

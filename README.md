@@ -24,13 +24,14 @@ header are left untouched.
 
 Paths below are relative to `src/` and the package namespace.
 
-| Directory | Responsibility |
-| --- | --- |
-| `Middleware` | `MiddlewareCursor`: immutable per-request position in a compiled middleware plan. |
-| `Dispatcher` | `HttpExceptionDispatcher`: protocol-specific response recovery. |
-| `Factory` | `HttpExceptionDispatcherFactory`: builds a dispatcher for one configured listener. |
-| `Registry / Routing` | Immutable middleware/route registries and controller dispatch. |
-| `Request / Response / Callbacks` | Native request adaptation, response conversion/emission, and the HTTP callback. |
+| Directory                        | Responsibility                                                                                                                      |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `Middleware`                     | `MiddlewareCursor`: immutable per-request position in a compiled middleware plan, plus declared middleware resolution.              |
+| `Dispatcher`                     | `HttpExceptionDispatcher`: protocol-specific response recovery, its handler chain, fallbacks, and the routing `404`/`405` terminal. |
+| `Factory`                        | `HttpExceptionDispatcherFactory`: builds a dispatcher for one configured listener.                                                  |
+| `Registry / Routing`             | Immutable middleware/route registries and controller dispatch.                                                                      |
+| `Request / Response / Callbacks` | Native request adaptation, response conversion/emission, and the HTTP callback.                                                     |
+| `Constants`                      | `HttpMethod`: route declaration methods; `RequestAttributeName`: request attribute names owned by the pipeline.                     |
 
 Implementation helpers retain an `@internal` boundary; a responsibility namespace does not make them extension points.
 
@@ -41,6 +42,7 @@ Use the following component declarations:
 - `Middleware\MiddlewareCursor`
 - `Dispatcher\HttpExceptionDispatcher`
 - `Factory\HttpExceptionDispatcherFactory`
+- `Constants\HttpMethod`
 
 ## Request and response contexts
 
@@ -148,15 +150,16 @@ enable it. Requests delegated to the existing Upgrade bypass do not enter this a
 ## Controllers and routes
 
 Mark a controller with `#[Controller]` and each public action with one or more `#[RequestMapping]` attributes. HTTP
-methods use the constants declared by `RequestMapping`, so unsupported method declarations fail at PHP attribute
-construction instead of being accepted as arbitrary strings. `Controller::$server` identifies the named HTTP server and
-must exactly match the case-sensitive `name()` of its Swoole listener. It defaults to `http`; the existing first
-positional argument remains the route prefix.
+methods are cases of the string-backed `Constants\HttpMethod` enum and default to `HttpMethod::Get`; a method string or
+any other value fails at PHP attribute construction instead of being accepted. `Controller::$server` identifies the
+named HTTP server and must exactly match the case-sensitive `name()` of its Swoole listener. It defaults to `http`; the
+existing first positional argument remains the route prefix.
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
 use SuperKernel\HttpServer\Attribute\Controller;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
+use SuperKernel\HttpServer\Constants\HttpMethod;
 
 #[Controller('/api')]
 final readonly class WidgetController
@@ -165,7 +168,7 @@ final readonly class WidgetController
     {
     }
 
-    #[RequestMapping('/widgets/{id:\d+}', RequestMapping::GET)]
+    #[RequestMapping('/widgets/{id:\d+}', HttpMethod::Get)]
     public function show(ServerRequestInterface $request, int $id): array
     {
         return [
