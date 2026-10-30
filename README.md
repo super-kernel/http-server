@@ -39,7 +39,6 @@ Implementation helpers retain an `@internal` boundary; a responsibility namespac
 
 Use the following component declarations:
 
-- `Middleware\MiddlewareCursor`
 - `Dispatcher\HttpExceptionDispatcher`
 - `Factory\HttpExceptionDispatcherFactory`
 - `Constants\HttpMethod`
@@ -52,9 +51,9 @@ The adapter recursively snapshots native request arrays as scalar, null, and nes
 through a read-only PSR stream, and rejects objects or resources, including embedded native Swoole HTTP handles. The
 callback installs only the resulting PSR messages into HTTP Message's `RequestContext` and `ResponseContext`; neither
 message retains or exposes its native Swoole counterpart. The request carries the original listener configuration
-array under the `super-kernel.server.listener` attribute, allowing the default pipeline to select routes and middleware
-by its `name` field. The handler requires an array with a non-empty string `name` at this PSR boundary; Server's
-configuration provider owns validation of all listener fields.
+array under the `super-kernel.server.listener` attribute, named by `Constants\RequestAttributeName::Listener`, allowing
+the default pipeline to select routes and middleware by its `name` field. The handler requires an array with a
+non-empty string `name` at this PSR boundary; Server's configuration provider owns validation of all listener fields.
 
 The context classes are typed holders rather than HTTP messages. They store their values through
 `SuperKernel\Context\Context` under the matching PSR-7 interface keys: `ServerRequestInterface::class` for requests and
@@ -367,8 +366,7 @@ keeps this decision independent of mutable request state on a shared handler ins
 dispatcher. Its constructor reads the exact `HttpExceptionHandler` registrations once, validates every local
 handler, and groups registrations by declaration `name` while preserving provider order. It does not retain the
 provider.
-`create(array $configuration)` preserves its existing fresh-dispatcher behavior. The additive
-`forListener(string $name): HttpExceptionDispatcher` API returns an immutable dispatcher prepared during factory
+Its `forListener(string $name): HttpExceptionDispatcher` API returns an immutable dispatcher prepared during factory
 construction for that exact name, or a shared empty-chain dispatcher when no handlers are registered. The native
 callback and routing fallback use this same API and retained factory, so requests neither reconstruct dispatchers
 nor rediscover, regroup, or sort handlers. Inject the factory into consumers; do not construct its service providers.
@@ -439,8 +437,11 @@ its reporting behavior.
 supplies a listener request attribute containing a non-empty string `name`:
 
 ```php
+use SuperKernel\HttpServer\Constants\RequestAttributeName;
+use SuperKernel\HttpServer\Provider\MiddlewareProvider;
+
 $middleware = new MiddlewareProvider($container, $responseConverter, $httpExceptionDispatcherFactory);
-$request = $request->withAttribute('super-kernel.server.listener', ['name' => 'http']);
+$request = $request->withAttribute(RequestAttributeName::Listener->value, ['name' => 'http']);
 ```
 
 Handlers without `exception:` match every throwable, including routing `404` and `405`. A stopping handler's response

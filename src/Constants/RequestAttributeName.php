@@ -6,8 +6,6 @@ namespace SuperKernel\HttpServer\Constants;
 
 /**
  * Names of the PSR server-request attributes that HTTP Server writes and reads across its request pipeline.
- *
- * @internal
  */
 enum RequestAttributeName: string
 {
