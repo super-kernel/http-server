@@ -88,7 +88,7 @@ It prints `{"greeting":"Hello, Ada!"}`, sent with `Content-Type: application/jso
 
 ## Behavior to know
 
-- Every listener configured with `Protocol::Http` or `Protocol::WebSocket` gets this package's `request` callback, even without controllers. If the callback is already set, the server does not start: `SuperKernel\HttpServer\Exception\RequestCallbackRegistrationException` reports `Unable to claim the HTTP request callback for the configured Swoole service "<name>".` Requests with an `Upgrade` header are left to WebSocket handling.
+- Outside `Mode::Coroutine`, every listener configured with `Protocol::Http` or `Protocol::WebSocket` gets this package's `request` callback, even without controllers. If the callback is already set, the server does not start: `SuperKernel\HttpServer\Exception\RequestCallbackRegistrationException` reports `Unable to claim the HTTP request callback for the configured Swoole service "<name>".` Requests with a non-empty `Upgrade` header are not handled by this package, so a WebSocket handshake reaches the WebSocket code.
 - An unknown path answers `404 Not Found` and a wrong method `405 Method Not Allowed` with one `Allow` header, as plain text, unless an exception handler of the listener stops with its own response.
 - An exception that no handler stops is logged and answered with `500 Internal Server Error` without details; an `HttpException` keeps its status, message, and headers. A failing request never ends the worker or affects other requests.
 - An invalid, repeated, or, in HTTP/1.1, missing `Host` header is answered with `400 Bad Request` before routing and middleware.

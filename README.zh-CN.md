@@ -88,7 +88,7 @@ curl http://127.0.0.1:9600/greetings/Ada
 
 ## 需要了解的行为
 
-- 每个以 `Protocol::Http` 或 `Protocol::WebSocket` 配置的监听器都会获得本包的 `request` 回调，即使没有控制器也是如此。如果该回调已经被设置，服务器不会启动：`SuperKernel\HttpServer\Exception\RequestCallbackRegistrationException` 报告 `Unable to claim the HTTP request callback for the configured Swoole service "<name>".` 带有 `Upgrade` 头的请求留给 WebSocket 处理。
+- 在 `Mode::Coroutine` 之外，每个以 `Protocol::Http` 或 `Protocol::WebSocket` 配置的监听器都会获得本包的 `request` 回调，即使没有控制器也是如此。如果该回调已经被设置，服务器不会启动：`SuperKernel\HttpServer\Exception\RequestCallbackRegistrationException` 报告 `Unable to claim the HTTP request callback for the configured Swoole service "<name>".` 带有非空 `Upgrade` 头的请求不会由本包处理，因此 WebSocket 握手会到达 WebSocket 代码。
 - 未知路径以 `404 Not Found` 应答，错误的方法以带有一个 `Allow` 头的 `405 Method Not Allowed` 应答，均为纯文本，除非该监听器的某个异常处理器以自己的响应停止处理链。
 - 没有处理器停止的异常会被记录，并以不含细节的 `500 Internal Server Error` 应答；`HttpException` 保留它的状态、消息和头。失败的请求永远不会结束工作进程，也不会影响其他请求。
 - 无效的、重复的或（在 HTTP/1.1 中）缺失的 `Host` 头会在路由和中间件之前以 `400 Bad Request` 应答。
