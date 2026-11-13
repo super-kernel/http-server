@@ -12,6 +12,7 @@ use ReflectionException;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use SuperKernel\Contract\ReflectorInterface;
+use SuperKernel\HttpServer\Exception\HttpException;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 
 use function is_a;
@@ -34,6 +35,7 @@ final readonly class ControllerArgumentResolver
      * @throws NotFoundExceptionInterface      When an action dependency is not registered
      * @throws ContainerExceptionInterface     When an action dependency cannot be resolved
      * @throws InvalidHttpDeclarationException When action reflection or HTTP argument binding fails
+     * @throws HttpException                   With status 400 when a route value cannot be converted to its parameter
      *
      * @noinspection PhpRedundantCatchClauseInspection
      */

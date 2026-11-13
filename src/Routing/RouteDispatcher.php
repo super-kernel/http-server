@@ -10,6 +10,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use SuperKernel\HttpMessage\Context\RequestContext;
+use SuperKernel\HttpServer\Exception\HttpException;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 
 use function get_debug_type;
@@ -31,6 +32,7 @@ final readonly class RouteDispatcher
      * @throws ContainerExceptionInterface     When the controller or an action dependency cannot be resolved
      * @throws InvalidHttpDeclarationException When dispatch validation, the controller type check, action reflection,
      *                                         or argument binding fails
+     * @throws HttpException                   With status 400 when a route value cannot be converted to its parameter
      */
     public function handle(ServerRequestInterface $request): mixed
     {

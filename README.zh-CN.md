@@ -92,6 +92,8 @@ curl http://127.0.0.1:9600/greetings/Ada
 - 未知路径以 `404 Not Found` 应答，错误的方法以带有一个 `Allow` 头的 `405 Method Not Allowed` 应答，均为纯文本，除非该监听器的某个异常处理器以自己的响应停止处理链。
 - 没有处理器停止的异常会被记录，并以不含细节的 `500 Internal Server Error` 应答；`HttpException` 保留它的状态、消息和头。失败的请求永远不会结束工作进程，也不会影响其他请求。
 - 无效的、重复的或（在 HTTP/1.1 中）缺失的 `Host` 头会在路由和中间件之前以 `400 Bad Request` 应答。
+- 路由路径 `''` 在控制器前缀本身上应答，路由路径 `/` 在前缀后接一个斜杠的路径上应答：对于 `#[Controller('/user')]`，它们分别应答 `/user` 和 `/user/`。
+- 无法转换为动作参数类型的路由值（例如 `int` 参数收到的 `abc`，或未知的回退枚举值）以 `400 Bad Request` 应答；监听器的异常处理器收到的是状态为 `400` 的 `HttpException`。名称与路由变量相同、但类型永远无法接收值的参数（例如不是回退枚举的类）会使服务器在启动时停止，消息为 `Route parameter $<name> of <class>::<method>() has type <type>, which cannot receive a route value.`
 - 控制器、中间件和异常处理器在服务器启动时检查；无效的声明会抛出 `SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException`，例如 `HTTP middleware <class> declared by <class> must implement Psr\Http\Server\MiddlewareInterface.`
 - 路由、中间件和处理器从构建元数据中发现：添加、删除或修改它们之后，请重新运行 `skernel build`，或者用会先构建的 `skernel run` 启动。
 

@@ -22,6 +22,8 @@ use SuperKernel\HttpServer\Attribute\Middlewares;
 use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Callbacks\OnRequestCallback;
 use SuperKernel\HttpServer\Constants\HttpMethod;
+use SuperKernel\HttpServer\Exception\HttpException;
+use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 use SuperKernel\HttpServer\Factory\HttpExceptionDispatcherFactory;
 use SuperKernel\HttpServer\Provider\MiddlewareProvider;
 use SuperKernel\HttpServer\Provider\MiddlewareRegistryProvider;
@@ -157,6 +159,102 @@ final class HttpRequestPipelineTest extends TestCase
             'enabled' => false,
             'state'   => 'disabled',
         ], json_decode((string) $response->getBody(), true, flags: JSON_THROW_ON_ERROR));
+    }
+
+    /** @throws Throwable When fixture setup or the operation under test throws */
+    public function testRaisesBadRequestForARouteValueThatCannotBeConverted(): void
+    {
+        $log = new InvocationLog();
+        $handler = self::application(self::collector(), $log);
+
+        try {
+            $handler->handle($this->request(uri: '/api/convert/example/abc/false/disabled', method: 'GET'));
+            self::fail('The route value was converted.');
+        } catch (HttpException $exception) {
+            self::assertSame(400, $exception->statusCode);
+            self::assertSame('Bad Request', $exception->getMessage());
+        }
+
+        self::assertSame([
+            'global:before',
+            'server:before',
+            'route:before',
+        ], $log->entries);
+    }
+
+    /** @throws Throwable When fixture setup or the operation under test throws */
+    public function testAnswersBadRequestForAnUnconvertibleRouteValueWithoutAStoppingHandler(): void
+    {
+        $log = new InvocationLog();
+        $collector = self::collector(
+            withExceptionHandlers: true,
+            exceptionHandlerException: InvalidHttpDeclarationException::class,
+        );
+        $httpExceptionDispatcherFactory = self::httpExceptionDispatcherFactory($collector, $log);
+        $callback = new OnRequestCallback(
+            [
+                'name' => 'http',
+                'host' => '127.0.0.1',
+                'port' => 9501,
+            ],
+            self::application($collector, $log),
+            new SwooleRequestAdapter(),
+            new SwooleResponseEmitter(new NullStdoutLogger()),
+            $httpExceptionDispatcherFactory,
+        );
+        $request = SwooleRequest::create();
+        $rawRequest = "GET /api/convert/example/1.5/maybe/disabled HTTP/1.1\r\nHost: example.test\r\n\r\n";
+        $response = $this->createMock(SwooleResponse::class);
+
+        self::assertSame(strlen($rawRequest), $request->parse($rawRequest));
+        $response->expects(self::once())->method('status')->with(400, 'Bad Request')->willReturn(true);
+        $response->expects(self::once())->method('header')
+            ->with('Content-Type', [
+                'text/plain; charset=utf-8',
+            ], false)->willReturn(true);
+        $response->expects(self::once())->method('end')->with('Bad Request')->willReturn(true);
+
+        $callback($request, $response);
+
+        self::assertNotContains('exception:handler', $log->entries);
+    }
+
+    /** @throws Throwable When fixture setup or the operation under test throws */
+    public function testPassesAnUnconvertibleRouteValueToTheHttpExceptionHandlers(): void
+    {
+        $log = new InvocationLog();
+        $collector = self::collector(
+            withExceptionHandlers: true,
+            exceptionHandlerException: HttpException::class,
+        );
+        $httpExceptionDispatcherFactory = self::httpExceptionDispatcherFactory($collector, $log);
+        $callback = new OnRequestCallback(
+            [
+                'name' => 'http',
+                'host' => '127.0.0.1',
+                'port' => 9501,
+            ],
+            self::application($collector, $log),
+            new SwooleRequestAdapter(),
+            new SwooleResponseEmitter(new NullStdoutLogger()),
+            $httpExceptionDispatcherFactory,
+        );
+        $request = SwooleRequest::create();
+        $rawRequest = "GET /api/convert/example/1.5/false/unknown HTTP/1.1\r\nHost: example.test\r\n\r\n";
+        $response = $this->createMock(SwooleResponse::class);
+
+        self::assertSame(strlen($rawRequest), $request->parse($rawRequest));
+        $response->expects(self::once())->method('status')->with(418, self::isString())->willReturn(true);
+        $response->expects(self::once())->method('end')->with('handled')->willReturn(true);
+
+        $callback($request, $response);
+
+        self::assertSame([
+            'global:before',
+            'server:before',
+            'route:before',
+            'exception:handler',
+        ], $log->entries);
     }
 
     /** @throws Throwable When fixture setup or the operation under test throws */
@@ -326,6 +424,7 @@ final class HttpRequestPipelineTest extends TestCase
         bool   $withExceptionHandlers = false,
         string $exceptionHandlerName = 'http',
         string $controllerServer = 'http',
+        string $exceptionHandlerException = Throwable::class,
     ): TestAnnotationCollector
     {
         $controller = new AttributeMetadata(new Controller(
@@ -375,7 +474,8 @@ final class HttpRequestPipelineTest extends TestCase
 
         if ($withExceptionHandlers) {
             $exceptionHandler = new AttributeMetadata(new HttpExceptionHandler(
-                name : $exceptionHandlerName,
+                name      : $exceptionHandlerName,
+                exception : $exceptionHandlerException,
             ));
             $classesByAttribute[HttpExceptionHandler::class] = [
                 RecordingHttpExceptionHandler::class => [
