@@ -6,6 +6,7 @@ namespace SuperKernel\HttpServer\Registry;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use FastRoute\RouteParser\Std;
 use ReflectionClass;
 use ReflectionMethod;
 use SuperKernel\Contract\AnnotationCollectorInterface;
@@ -14,10 +15,12 @@ use SuperKernel\HttpServer\Attribute\RequestMapping;
 use SuperKernel\HttpServer\Exception\InvalidHttpDeclarationException;
 use SuperKernel\HttpServer\Routing\Dispatched;
 use SuperKernel\HttpServer\Routing\RouteDefinition;
+use SuperKernel\HttpServer\Routing\RouteValueConverter;
 use Throwable;
 
 use function FastRoute\simpleDispatcher;
 use function get_debug_type;
+use function is_array;
 use function ltrim;
 use function rtrim;
 use function sprintf;
@@ -31,15 +34,13 @@ final readonly class RouteRegistry
     {
         /**
          * @var array<non-empty-string, list<array{
-         *     prefix: string,
-         *     routes: list<array{
-         *         method: non-empty-string,
-         *         path: non-empty-string,
-         *         handler: RouteDefinition
-         *     }>
-         * }>> $routeGroups
+         *     method: non-empty-string,
+         *     path: non-empty-string,
+         *     handler: RouteDefinition
+         * }>> $serverRoutes
          */
-        $routeGroups = [];
+        $serverRoutes = [];
+        $routeParser = new Std();
 
         foreach ($collector->getClassesWithAttribute(Controller::class) as $className => [$metadata]) {
             $controller = $metadata->attribute();
@@ -60,7 +61,9 @@ final readonly class RouteRegistry
                 ));
             }
 
-            $routes = [];
+            // The prefix starts with a slash and has none at its end, so that an empty route path answers at the
+            // prefix itself and a route path "/" at the prefix followed by a slash.
+            $prefix = rtrim('/' . ltrim($controller->prefix, '/'), '/');
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 if ($method->isStatic() || $className !== $method->getDeclaringClass()->getName()) {
@@ -68,20 +71,46 @@ final readonly class RouteRegistry
                 }
 
                 $methodAttributes = $collector->getMethodAttributes($className, $method->getName());
-                $mappings = [];
 
                 foreach ($methodAttributes as $attribute) {
-                    if (RequestMapping::class === $attribute->name()) {
-                        /** @var RequestMapping $instance */
-                        $instance = $attribute->attribute();
-                        $mappings[] = $instance;
+                    if (RequestMapping::class !== $attribute->name()) {
+                        continue;
                     }
-                }
 
-                foreach ($mappings as $mapping) {
-                    $routes[] = [
+                    /** @var RequestMapping $mapping */
+                    $mapping = $attribute->attribute();
+                    $path = $prefix . ('' === $mapping->path ? '' : '/' . ltrim($mapping->path, '/'));
+                    $path = '' === $path ? '/' : $path;
+
+                    try {
+                        $variants = $routeParser->parse($path);
+                    } catch (Throwable $throwable) {
+                        throw new InvalidHttpDeclarationException(
+                            'Unable to build the HTTP route table.',
+                            0,
+                            $throwable,
+                        );
+                    }
+
+                    $variables = [];
+
+                    foreach ($variants as $segments) {
+                        foreach ($segments as $segment) {
+                            if (is_array($segment)) {
+                                $variables[$segment[0]] = true;
+                            }
+                        }
+                    }
+
+                    foreach ($method->getParameters() as $parameter) {
+                        if (isset($variables[$parameter->getName()])) {
+                            RouteValueConverter::assertSupported($parameter);
+                        }
+                    }
+
+                    $serverRoutes[$controller->server][] = [
                         'method'  => $mapping->method->value,
-                        'path'    => '/' . ltrim($mapping->path, '/'),
+                        'path'    => $path,
                         'handler' => new RouteDefinition(
                             $className,
                             $method->getName(),
@@ -89,30 +118,16 @@ final readonly class RouteRegistry
                     ];
                 }
             }
-
-            if ([] !== $routes) {
-                $routeGroups[$controller->server][] = [
-                    'prefix' => rtrim('/' . ltrim($controller->prefix, '/'), '/'),
-                    'routes' => $routes,
-                ];
-            }
         }
 
         $dispatchers = [];
 
         try {
-            foreach ($routeGroups as $serverName => $serverRouteGroups) {
+            foreach ($serverRoutes as $serverName => $routes) {
                 $dispatchers[$serverName] = simpleDispatcher(
-                    static function (RouteCollector $collector) use ($serverRouteGroups): void {
-                        foreach ($serverRouteGroups as $routeGroup) {
-                            $collector->addGroup(
-                                $routeGroup['prefix'],
-                                static function (RouteCollector $collector) use ($routeGroup): void {
-                                    foreach ($routeGroup['routes'] as $route) {
-                                        $collector->addRoute($route['method'], $route['path'], $route['handler']);
-                                    }
-                                },
-                            );
+                    static function (RouteCollector $collector) use ($routes): void {
+                        foreach ($routes as $route) {
+                            $collector->addRoute($route['method'], $route['path'], $route['handler']);
                         }
                     },
                 );
